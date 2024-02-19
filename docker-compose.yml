@@ -1,5 +1,13 @@
 version: "3.9"
 services:
+  web:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - app
+    # ... you can set additional configurations like volumes for hot-reloading during development
+
   app:
     build:
       context: .
@@ -12,6 +20,7 @@ services:
     volumes:
       - ./dataherald:/app/dataherald
     depends_on:
+      - db
       - mongodb
     networks:
       - backendnetwork
@@ -30,6 +39,22 @@ services:
       MONGO_INITDB_DATABASE: "${MONGODB_DB_NAME}"
     networks:
       - backendnetwork
+
+  db:
+    image: postgres:14.1-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5433:5432'
+    volumes:
+      - db:/var/lib/postgresql/data
+    networks:
+      - backendnetwork
+volumes:
+  db:
+    driver: local
 networks:
   backendnetwork:
     external: true
