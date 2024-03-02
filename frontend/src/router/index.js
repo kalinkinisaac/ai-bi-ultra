@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Home from '@/views/Home.vue';
 import DatabaseConnection from '@/views/DatabaseConnection.vue';
 import QueryData from '@/views/QueryData.vue';
+import Connections from "@/views/Connections.vue";
 
 const routes = [
   {
@@ -13,6 +14,11 @@ const routes = [
     path: '/connect',
     name: 'Connect',
     component: DatabaseConnection
+  },
+  {
+    path: '/connections',
+    name: 'Connections',
+    component: Connections
   },
   {
     path: '/query',

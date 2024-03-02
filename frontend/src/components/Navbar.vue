@@ -8,6 +8,9 @@
             <router-link class="nav-link" to="/connect">Connect to Database</router-link>
           </li>
           <li class="nav-item">
+            <router-link class="nav-link" to="/connections">Connections</router-link>
+          </li>
+          <li class="nav-item">
             <router-link class="nav-link" to="/query">Query Data</router-link>
           </li>
         </ul>
