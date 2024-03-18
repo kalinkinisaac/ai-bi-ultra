@@ -15,7 +15,7 @@ import {
   <div class="px-4 py-2">
     <DropdownMenu>
       <DropdownMenuTrigger>
-        <Button variant="ghost" class="flex flex-row w-full gap-2 justify-start px-3" size="lg">
+        <Button variant="ghost" class="flex flex-row gap-2 justify-start" size="lg">
           <Avatar class="w-8 h-8">
             <AvatarImage src="https://github.com/radix-vue.png" alt="@radix-vue" />
             <AvatarFallback>A</AvatarFallback>

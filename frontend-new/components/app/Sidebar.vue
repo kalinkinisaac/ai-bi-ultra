@@ -13,8 +13,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 </script>
 
 <template>
-  <div class="flex flex-col max-h-screen">
-    <ScrollArea class=" px-1">
+  <div class="flex flex-col">
+    <ScrollArea class="flex-1 px-1">
       <div class="space-y-4 py-4">
         <div class="px-3 py-2">
           <h2 class="mb-2 text-lg font-semibold tracking-tight">
@@ -44,7 +44,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
             <span>Избранное</span>
           </h2>
           <div class="space-y-1">
-            <Button v-for="(item, idx) in Array.from(Array(5).keys())" :key="idx" variant="secondary" class="w-full justify-start">
+            <Button v-for="(item, idx) in Array.from(Array(15).keys())" :key="idx" variant="secondary" class="w-full justify-start">
               Btn Text
             </Button>
             <Button variant="secondary" class="w-full justify-start">
