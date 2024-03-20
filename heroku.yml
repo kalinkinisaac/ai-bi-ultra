@@ -1,0 +1,5 @@
+build:
+  docker:
+    nginx: nginx/Dockerfile
+    web: frontend/development.Dockerfile
+    app: Dockerfile
