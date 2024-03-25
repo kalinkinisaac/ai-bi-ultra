@@ -5,9 +5,11 @@ const colorMode = useColorMode()
 </script>
 
 <template>
-    <div>
-        <div class="font-bold text-xl">Aibi</div>
-        <div class="">
-        </div>
-    </div>
+  <div>
+    <NuxtLink :to="{ name: 'index'}">
+      <div class="font-bold text-xl">
+        Aibi
+      </div>
+    </NuxtLink>
+  </div>
 </template>
