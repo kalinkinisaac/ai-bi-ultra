@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Install app dependencies by copying package.json files and running npm install
 COPY package*.json ./
-RUN npm install
+RUN npm install --ignore-scripts --unsafe-perm --loglevel verbose
 
 # Copy the rest of the project files
 COPY . .
