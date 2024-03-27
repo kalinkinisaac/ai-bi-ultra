@@ -12,17 +12,26 @@ from sshtunnel import SSHTunnelForwarder
 
 from dataherald.sql_database.models.types import DatabaseConnection
 from dataherald.utils.encrypt import FernetEncrypt
+from dataherald.utils.error_codes import CustomError
 from dataherald.utils.s3 import S3
 
 logger = logging.getLogger(__name__)
 
 
 # Define a custom exception class
-class SQLInjectionError(Exception):
+class SQLInjectionError(CustomError):
     pass
 
 
-class InvalidDBConnectionError(Exception):
+class InvalidDBConnectionError(CustomError):
+    pass
+
+
+class EmptyDBError(CustomError):
+    pass
+
+
+class SSHInvalidDatabaseConnectionError(CustomError):
     pass
 
 
@@ -79,13 +88,19 @@ class SQLDatabase:
                 engine = cls.from_uri_ssh(database_info)
                 DBConnections.add(database_info.id, engine)
                 return engine
+        except Exception as e:
+            raise SSHInvalidDatabaseConnectionError(
+                "Invalid SSH connection", description=str(e)
+            ) from e
+        try:
             db_uri = unquote(fernet_encrypt.decrypt(database_info.connection_uri))
-            if db_uri.lower().startswith("bigquery"):
-                file_path = database_info.path_to_credentials_file
-                if file_path.lower().startswith("s3"):
-                    s3 = S3()
-                    file_path = s3.download(file_path)
 
+            file_path = database_info.path_to_credentials_file
+            if file_path and file_path.lower().startswith("s3"):
+                s3 = S3()
+                file_path = s3.download(file_path)
+
+            if db_uri.lower().startswith("bigquery"):
                 db_uri = db_uri + f"?credentials_path={file_path}"
 
             engine = cls.from_uri(db_uri)
@@ -93,7 +108,7 @@ class SQLDatabase:
             DBConnections.add(database_info.id, engine)
         except Exception as e:
             raise InvalidDBConnectionError(  # noqa: B904
-                f"Unable to connect to db: {database_info.alias}, {e}"
+                f"Unable to connect to db: {database_info.alias}", description=str(e)
             )
         return engine
 
@@ -170,6 +185,7 @@ class SQLDatabase:
             "TRUNCATE",
             "MERGE",
             "EXECUTE",
+            "CREATE",
         ]
         parsed_command = sqlparse.parse(command)
 
@@ -206,7 +222,10 @@ class SQLDatabase:
         inspector = inspect(self._engine)
         meta = MetaData(bind=self._engine)
         MetaData.reflect(meta, views=True)
-        return inspector.get_table_names() + inspector.get_view_names()
+        rows = inspector.get_table_names() + inspector.get_view_names()
+        if len(rows) == 0:
+            raise EmptyDBError("The db is empty it could be a permission issue")
+        return [row.lower() for row in rows]
 
     @property
     def dialect(self) -> str:

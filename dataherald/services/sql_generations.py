@@ -1,4 +1,7 @@
+import os
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from datetime import datetime
+from queue import Queue
 
 import pandas as pd
 
@@ -40,6 +43,26 @@ class SQLGenerationService:
         sql_generation.error = error
         return self.sql_generation_repository.update(sql_generation)
 
+    def generate_response_with_timeout(
+        self, sql_generator, user_prompt, db_connection, metadata=None
+    ):
+        return sql_generator.generate_response(
+            user_prompt=user_prompt,
+            database_connection=db_connection,
+            metadata=metadata,
+        )
+
+    def update_the_initial_sql_generation(
+        self, initial_sql_generation: SQLGeneration, sql_generation: SQLGeneration
+    ):
+        initial_sql_generation.sql = sql_generation.sql
+        initial_sql_generation.tokens_used = sql_generation.tokens_used
+        initial_sql_generation.completed_at = datetime.now()
+        initial_sql_generation.status = sql_generation.status
+        initial_sql_generation.error = sql_generation.error
+        initial_sql_generation.intermediate_steps = sql_generation.intermediate_steps
+        return self.sql_generation_repository.update(initial_sql_generation)
+
     def create(
         self, prompt_id: str, sql_generation_request: SQLGenerationRequest
     ) -> SQLGeneration:
@@ -50,6 +73,11 @@ class SQLGenerationService:
             if sql_generation_request.llm_config
             else LLMConfig(),
             metadata=sql_generation_request.metadata,
+        )
+        langsmith_metadata = (
+            sql_generation_request.metadata.get("lang_smith", {})
+            if sql_generation_request.metadata
+            else {}
         )
         self.sql_generation_repository.insert(initial_sql_generation)
         prompt_repository = PromptRepository(self.storage)
@@ -109,9 +137,26 @@ class SQLGenerationService:
                     sql_generation_request.low_latency_mode
                 )
             try:
-                sql_generation = sql_generator.generate_response(
-                    user_prompt=prompt, database_connection=db_connection
-                )
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(
+                        self.generate_response_with_timeout,
+                        sql_generator,
+                        prompt,
+                        db_connection,
+                        metadata=langsmith_metadata,
+                    )
+                    try:
+                        sql_generation = future.result(
+                            timeout=int(os.environ.get("DH_ENGINE_TIMEOUT", 150))
+                        )
+                    except TimeoutError as e:
+                        self.update_error(
+                            initial_sql_generation, "SQL generation request timed out"
+                        )
+                        raise SQLGenerationError(
+                            "SQL generation request timed out",
+                            initial_sql_generation.id,
+                        ) from e
             except Exception as e:
                 self.update_error(initial_sql_generation, str(e))
                 raise SQLGenerationError(str(e), initial_sql_generation.id) from e
@@ -129,12 +174,77 @@ class SQLGenerationService:
             )
             initial_sql_generation.evaluate = sql_generation_request.evaluate
             initial_sql_generation.confidence_score = confidence_score
-        initial_sql_generation.sql = sql_generation.sql
-        initial_sql_generation.tokens_used = sql_generation.tokens_used
-        initial_sql_generation.completed_at = datetime.now()
-        initial_sql_generation.status = sql_generation.status
-        initial_sql_generation.error = sql_generation.error
-        return self.sql_generation_repository.update(initial_sql_generation)
+        return self.update_the_initial_sql_generation(
+            initial_sql_generation, sql_generation
+        )
+
+    def start_streaming(
+        self, prompt_id: str, sql_generation_request: SQLGenerationRequest, queue: Queue
+    ):
+        initial_sql_generation = SQLGeneration(
+            prompt_id=prompt_id,
+            created_at=datetime.now(),
+            llm_config=sql_generation_request.llm_config
+            if sql_generation_request.llm_config
+            else LLMConfig(),
+            metadata=sql_generation_request.metadata,
+        )
+        langsmith_metadata = (
+            sql_generation_request.metadata.get("lang_smith", {})
+            if sql_generation_request.metadata
+            else {}
+        )
+        self.sql_generation_repository.insert(initial_sql_generation)
+        prompt_repository = PromptRepository(self.storage)
+        prompt = prompt_repository.find_by_id(prompt_id)
+        if not prompt:
+            self.update_error(initial_sql_generation, f"Prompt {prompt_id} not found")
+            raise PromptNotFoundError(
+                f"Prompt {prompt_id} not found", initial_sql_generation.id
+            )
+        db_connection_repository = DatabaseConnectionRepository(self.storage)
+        db_connection = db_connection_repository.find_by_id(prompt.db_connection_id)
+        if (
+            sql_generation_request.finetuning_id is None
+            or sql_generation_request.finetuning_id == ""
+        ):
+            if sql_generation_request.low_latency_mode:
+                raise SQLGenerationError(
+                    "Low latency mode is not supported for our old agent with no finetuning. Please specify a finetuning id.",
+                    initial_sql_generation.id,
+                )
+            sql_generator = DataheraldSQLAgent(
+                self.system,
+                sql_generation_request.llm_config
+                if sql_generation_request.llm_config
+                else LLMConfig(),
+            )
+        else:
+            sql_generator = DataheraldFinetuningAgent(
+                self.system,
+                sql_generation_request.llm_config
+                if sql_generation_request.llm_config
+                else LLMConfig(),
+            )
+            sql_generator.finetuning_id = sql_generation_request.finetuning_id
+            sql_generator.use_fintuned_model_only = (
+                sql_generation_request.low_latency_mode
+            )
+            initial_sql_generation.finetuning_id = sql_generation_request.finetuning_id
+            initial_sql_generation.low_latency_mode = (
+                sql_generation_request.low_latency_mode
+            )
+        try:
+            sql_generator.stream_response(
+                user_prompt=prompt,
+                database_connection=db_connection,
+                response=initial_sql_generation,
+                queue=queue,
+                metadata=langsmith_metadata,
+            )
+        except Exception as e:
+            self.update_error(initial_sql_generation, str(e))
+            raise SQLGenerationError(str(e), initial_sql_generation.id) from e
 
     def get(self, query) -> list[SQLGeneration]:
         return self.sql_generation_repository.find_by(query)

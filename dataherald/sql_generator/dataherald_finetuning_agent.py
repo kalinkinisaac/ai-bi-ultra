@@ -2,9 +2,13 @@ import datetime
 import logging
 import os
 from functools import wraps
+from queue import Queue
+from threading import Thread
 from typing import Any, Callable, Dict, List, Type
 
+import numpy as np
 import openai
+import pandas as pd
 from google.api_core.exceptions import GoogleAPIError
 from langchain.agents.agent import AgentExecutor
 from langchain.agents.agent_toolkits.base import BaseToolkit
@@ -15,12 +19,13 @@ from langchain.callbacks.manager import (
     CallbackManagerForToolRun,
 )
 from langchain.chains.llm import LLMChain
-from langchain.schema import AgentAction
 from langchain.tools.base import BaseTool
 from langchain_community.callbacks import get_openai_callback
+from langchain_openai import OpenAIEmbeddings
 from openai import OpenAI
 from overrides import override
 from pydantic import BaseModel, Field
+from sql_metadata import Parser
 from sqlalchemy.exc import SQLAlchemyError
 
 from dataherald.context_store import ContextStore
@@ -29,6 +34,9 @@ from dataherald.db_scanner.models.types import TableDescription, TableDescriptio
 from dataherald.db_scanner.repository.base import TableDescriptionRepository
 from dataherald.finetuning.openai_finetuning import OpenAIFineTuning
 from dataherald.repositories.finetunings import FinetuningsRepository
+from dataherald.repositories.sql_generations import (
+    SQLGenerationRepository,
+)
 from dataherald.sql_database.base import SQLDatabase, SQLInjectionError
 from dataherald.sql_database.models.types import (
     DatabaseConnection,
@@ -36,6 +44,7 @@ from dataherald.sql_database.models.types import (
 from dataherald.sql_generator import EngineTimeOutORItemLimitError, SQLGenerator
 from dataherald.types import FineTuningStatus, Prompt, SQLGeneration
 from dataherald.utils.agent_prompts import (
+    ERROR_PARSING_MESSAGE,
     FINETUNING_AGENT_PREFIX,
     FINETUNING_AGENT_PREFIX_FINETUNING_ONLY,
     FINETUNING_AGENT_SUFFIX,
@@ -43,11 +52,14 @@ from dataherald.utils.agent_prompts import (
     FORMAT_INSTRUCTIONS,
 )
 from dataherald.utils.models_context_window import OPENAI_FINETUNING_MODELS_WINDOW_SIZES
+from dataherald.utils.timeout_utils import run_with_timeout
 
 logger = logging.getLogger(__name__)
 
 
 TOP_K = SQLGenerator.get_upper_bound_limit()
+EMBEDDING_MODEL = "text-embedding-3-large"
+TOP_TABLES = 20
 
 
 class FinetuningNotAvailableError(Exception):
@@ -144,29 +156,90 @@ class SystemTime(BaseSQLDatabaseTool, BaseTool):
 class TablesSQLDatabaseTool(BaseSQLDatabaseTool, BaseTool):
     """Tool which takes in the given question and returns a list of tables with their relevance score to the question"""
 
-    name = "GetDbTableNames"
+    name = "DbTablesWithRelevanceScores"
     description = """
-    Input: None.
-    Output: List of tables in the database.
-    Use this tool to get the list of tables in the database.
+    Input: Given question.
+    Output: Comma-separated list of tables with their relevance scores, indicating their relevance to the question.
+    Use this tool to identify the relevant tables for the given question.
     """
     db_scan: List[TableDescription]
+    embedding: OpenAIEmbeddings
+    few_shot_examples: List[dict] | None = Field(exclude=True, default=None)
+
+    def get_embedding(
+        self,
+        text: str,
+    ) -> List[float]:
+        text = text.replace("\n", " ")
+        return self.embedding.embed_query(text)
+
+    def get_docs_embedding(
+        self,
+        docs: List[str],
+    ) -> List[List[float]]:
+        return self.embedding.embed_documents(docs)
+
+    def cosine_similarity(self, a: List[float], b: List[float]) -> float:
+        return round(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)), 4)
+
+    def similart_tables_based_on_few_shot_examples(self, df: pd.DataFrame) -> List[str]:
+        most_similar_tables = set()
+        if self.few_shot_examples is not None:
+            for example in self.few_shot_examples:
+                try:
+                    tables = Parser(example["sql"]).tables
+                except Exception as e:
+                    logger.error(f"Error parsing SQL: {str(e)}")
+                most_similar_tables.update(tables)
+            df.drop(df[df.table_name.isin(most_similar_tables)].index, inplace=True)
+        return most_similar_tables
 
     @catch_exceptions()
     def _run(
         self,
-        input: str,  # noqa: ARG002
+        user_question: str,
         run_manager: CallbackManagerForToolRun | None = None,  # noqa: ARG002
     ) -> str:
         """Use the concatenation of table name, columns names, and the description of the table as the table representation"""
-        tables = []
+        question_embedding = self.get_embedding(user_question)
+        table_representations = []
         for table in self.db_scan:
-            tables.append(table.table_name)
-        return f"Tables in the database: {','.join(tables)}"
+            col_rep = ""
+            for column in table.columns:
+                if column.description:
+                    col_rep += f"{column.name}: {column.description}, "
+                else:
+                    col_rep += f"{column.name}, "
+            if table.description:
+                table_rep = f"Table {table.table_name} contain columns: [{col_rep}], this tables has: {table.description}"
+            else:
+                table_rep = f"Table {table.table_name} contain columns: [{col_rep}]"
+            table_representations.append([table.table_name, table_rep])
+        df = pd.DataFrame(
+            table_representations, columns=["table_name", "table_representation"]
+        )
+        df["table_embedding"] = self.get_docs_embedding(df.table_representation)
+        df["similarities"] = df.table_embedding.apply(
+            lambda x: self.cosine_similarity(x, question_embedding)
+        )
+        df = df.sort_values(by="similarities", ascending=True)
+        df = df.tail(TOP_TABLES)
+        most_similar_tables = self.similart_tables_based_on_few_shot_examples(df)
+        table_relevance = ""
+        for _, row in df.iterrows():
+            table_relevance += (
+                f'Table: {row["table_name"]}, relevance score: {row["similarities"]}\n'
+            )
+        if len(most_similar_tables) > 0:
+            for table in most_similar_tables:
+                table_relevance += (
+                    f"Table: {table}, relevance score: {max(df['similarities'])}\n"
+                )
+        return table_relevance
 
     async def _arun(
         self,
-        input: str = "",
+        user_question: str = "",
         run_manager: AsyncCallbackManagerForToolRun | None = None,
     ) -> str:
         raise NotImplementedError("TablesSQLDatabaseTool does not support async")
@@ -175,7 +248,7 @@ class TablesSQLDatabaseTool(BaseSQLDatabaseTool, BaseTool):
 class QuerySQLDataBaseTool(BaseSQLDatabaseTool, BaseTool):
     """Tool for querying a SQL database."""
 
-    name = "ExecuteQuery"
+    name = "SqlDbQuery"
     description = """
     Input: SQL query.
     Output: Result from the database or an error message if the query is incorrect.
@@ -193,7 +266,16 @@ class QuerySQLDataBaseTool(BaseSQLDatabaseTool, BaseTool):
         query = replace_unprocessable_characters(query)
         if "```sql" in query:
             query = query.replace("```sql", "").replace("```", "")
-        return self.db.run_sql(query, top_k=TOP_K)[0]
+
+        try:
+            return run_with_timeout(
+                self.db.run_sql,
+                args=(query,),
+                kwargs={"top_k": TOP_K},
+                timeout_duration=int(os.getenv("SQL_EXECUTION_TIMEOUT", "60")),
+            )[0]
+        except TimeoutError:
+            return "SQL query execution time exceeded, proceed without query execution"
 
     async def _arun(
         self,
@@ -219,6 +301,7 @@ class GenerateSQL(BaseSQLDatabaseTool, BaseTool):
     db_scan: List[TableDescription]
     api_key: str = Field(exclude=True)
     openai_fine_tuning: OpenAIFineTuning = Field(exclude=True)
+    embedding: OpenAIEmbeddings = Field(exclude=True)
 
     @catch_exceptions()
     def _run(
@@ -227,10 +310,17 @@ class GenerateSQL(BaseSQLDatabaseTool, BaseTool):
         run_manager: CallbackManagerForToolRun | None = None,  # noqa: ARG002
     ) -> str:
         """Execute the query, return the results or an error message."""
+        table_representations = []
+        for table in self.db_scan:
+            table_representations.append(
+                self.openai_fine_tuning.create_table_representation(table)
+            )
+        table_embeddings = self.embedding.embed_documents(table_representations)
         system_prompt = (
             FINETUNING_SYSTEM_INFORMATION
             + self.openai_fine_tuning.format_dataset(
                 self.db_scan,
+                table_embeddings,
                 question,
                 OPENAI_FINETUNING_MODELS_WINDOW_SIZES[self.model_name] - 500,
             )
@@ -283,8 +373,18 @@ class SchemaSQLDatabaseTool(BaseSQLDatabaseTool, BaseTool):
         for table in self.db_scan:
             if table.table_name in table_names_list:
                 tables_schema += table.table_schema + "\n"
+                descriptions = []
                 if table.description is not None:
-                    tables_schema += "Table description: " + table.description + "\n"
+                    descriptions.append(
+                        f"Table `{table.table_name}`: {table.description}\n"
+                    )
+                    for column in table.columns:
+                        if column.description is not None:
+                            descriptions.append(
+                                f"Column `{column.name}`: {column.description}\n"
+                            )
+                if len(descriptions) > 0:
+                    tables_schema += f"/*\n{''.join(descriptions)}*/\n"
         if tables_schema == "":
             tables_schema += "Tables not found in the database"
         return tables_schema
@@ -308,6 +408,8 @@ class SQLDatabaseToolkit(BaseToolkit):
     use_finetuned_model_only: bool = Field(exclude=True, default=None)
     model_name: str = Field(exclude=True)
     openai_fine_tuning: OpenAIFineTuning = Field(exclude=True)
+    embedding: OpenAIEmbeddings = Field(exclude=True)
+    few_shot_examples: List[dict] | None = Field(exclude=True, default=None)
 
     @property
     def dialect(self) -> str:
@@ -325,7 +427,14 @@ class SQLDatabaseToolkit(BaseToolkit):
         if not self.use_finetuned_model_only:
             tools.append(SystemTime(db=self.db))
             tools.append(SchemaSQLDatabaseTool(db=self.db, db_scan=self.db_scan))
-            tools.append(TablesSQLDatabaseTool(db=self.db, db_scan=self.db_scan))
+            tools.append(
+                TablesSQLDatabaseTool(
+                    db=self.db,
+                    db_scan=self.db_scan,
+                    embedding=self.embedding,
+                    few_shot_examples=self.few_shot_examples,
+                )
+            )
         tools.append(QuerySQLDataBaseTool(db=self.db))
         tools.append(
             GenerateSQL(
@@ -335,6 +444,7 @@ class SQLDatabaseToolkit(BaseToolkit):
                 finetuning_model_id=self.finetuning_model_id,
                 model_name=self.model_name,
                 openai_fine_tuning=self.openai_fine_tuning,
+                embedding=self.embedding,
             )
         )
         return tools
@@ -406,6 +516,7 @@ class DataheraldFinetuningAgent(SQLGenerator):
         user_prompt: Prompt,
         database_connection: DatabaseConnection,
         context: List[dict] = None,  # noqa: ARG002
+        metadata: dict = None,
     ) -> SQLGeneration:
         """
         generate_response generates a response to a user question using a Finetuning model.
@@ -442,6 +553,109 @@ class DataheraldFinetuningAgent(SQLGenerator):
         )
         if not db_scan:
             raise ValueError("No scanned tables found for database")
+        few_shot_examples, instructions = context_store.retrieve_context_for_question(
+            user_prompt, number_of_samples=5
+        )
+        finetunings_repository = FinetuningsRepository(storage)
+        finetuning = finetunings_repository.find_by_id(self.finetuning_id)
+        openai_fine_tuning = OpenAIFineTuning(storage, finetuning)
+        finetuning = openai_fine_tuning.retrieve_finetuning_job()
+        if finetuning.status != FineTuningStatus.SUCCEEDED.value:
+            raise FinetuningNotAvailableError(
+                f"Finetuning({self.finetuning_id}) has the status {finetuning.status}."
+                f"Finetuning should have the status {FineTuningStatus.SUCCEEDED.value} to generate SQL queries."
+            )
+        self.database = SQLDatabase.get_sql_engine(database_connection)
+        toolkit = SQLDatabaseToolkit(
+            db=self.database,
+            instructions=instructions,
+            few_shot_examples=few_shot_examples,
+            db_scan=db_scan,
+            api_key=database_connection.decrypt_api_key(),
+            finetuning_model_id=finetuning.model_id,
+            use_finetuned_model_only=self.use_fintuned_model_only,
+            model_name=finetuning.base_llm.model_name,
+            openai_fine_tuning=openai_fine_tuning,
+            embedding=OpenAIEmbeddings(
+                openai_api_key=database_connection.decrypt_api_key(),
+                model=EMBEDDING_MODEL,
+            ),
+        )
+        agent_executor = self.create_sql_agent(
+            toolkit=toolkit,
+            verbose=True,
+            max_execution_time=int(os.environ.get("DH_ENGINE_TIMEOUT", 150)),
+        )
+        agent_executor.return_intermediate_steps = True
+        agent_executor.handle_parsing_errors = ERROR_PARSING_MESSAGE
+        with get_openai_callback() as cb:
+            try:
+                result = agent_executor.invoke(
+                    {"input": user_prompt.text}, {"metadata": metadata}
+                )
+                result = self.check_for_time_out_or_tool_limit(result)
+            except SQLInjectionError as e:
+                raise SQLInjectionError(e) from e
+            except EngineTimeOutORItemLimitError as e:
+                raise EngineTimeOutORItemLimitError(e) from e
+            except Exception as e:
+                return SQLGeneration(
+                    prompt_id=user_prompt.id,
+                    tokens_used=cb.total_tokens,
+                    finetuning_id=self.finetuning_id,
+                    completed_at=datetime.datetime.now(),
+                    sql="",
+                    status="INVALID",
+                    error=str(e),
+                )
+        sql_query = ""
+        if "```sql" in result["output"]:
+            sql_query = self.remove_markdown(result["output"])
+        else:
+            sql_query = self.extract_query_from_intermediate_steps(
+                result["intermediate_steps"]
+            )
+        logger.info(f"cost: {str(cb.total_cost)} tokens: {str(cb.total_tokens)}")
+        response.sql = replace_unprocessable_characters(sql_query)
+        response.tokens_used = cb.total_tokens
+        response.completed_at = datetime.datetime.now()
+        response.intermediate_steps = self.construct_intermediate_steps(
+            result["intermediate_steps"], FINETUNING_AGENT_SUFFIX
+        )
+        return self.create_sql_query_status(
+            self.database,
+            response.sql,
+            response,
+        )
+
+    @override
+    def stream_response(
+        self,
+        user_prompt: Prompt,
+        database_connection: DatabaseConnection,
+        response: SQLGeneration,
+        queue: Queue,
+        metadata: dict = None,
+    ):
+        context_store = self.system.instance(ContextStore)
+        storage = self.system.instance(DB)
+        sql_generation_repository = SQLGenerationRepository(storage)
+        self.llm = self.model.get_model(
+            database_connection=database_connection,
+            temperature=0,
+            model_name=self.llm_config.llm_name,
+            api_base=self.llm_config.api_base,
+            streaming=True,
+        )
+        repository = TableDescriptionRepository(storage)
+        db_scan = repository.get_all_tables_by_db(
+            {
+                "db_connection_id": str(database_connection.id),
+                "status": TableDescriptionStatus.SCANNED.value,
+            }
+        )
+        if not db_scan:
+            raise ValueError("No scanned tables found for database")
         _, instructions = context_store.retrieve_context_for_question(
             user_prompt, number_of_samples=1
         )
@@ -464,48 +678,27 @@ class DataheraldFinetuningAgent(SQLGenerator):
             use_finetuned_model_only=self.use_fintuned_model_only,
             model_name=finetuning.base_llm.model_name,
             openai_fine_tuning=openai_fine_tuning,
+            embedding=OpenAIEmbeddings(
+                openai_api_key=database_connection.decrypt_api_key(),
+                model=EMBEDDING_MODEL,
+            ),
         )
         agent_executor = self.create_sql_agent(
             toolkit=toolkit,
             verbose=True,
-            max_execution_time=os.getenv("DH_ENGINE_TIMEOUT", None),
+            max_execution_time=int(os.environ.get("DH_ENGINE_TIMEOUT", 150)),
         )
         agent_executor.return_intermediate_steps = True
-        agent_executor.handle_parsing_errors = True
-        with get_openai_callback() as cb:
-            try:
-                result = agent_executor.invoke({"input": user_prompt.text})
-                result = self.check_for_time_out_or_tool_limit(result)
-            except SQLInjectionError as e:
-                raise SQLInjectionError(e) from e
-            except EngineTimeOutORItemLimitError as e:
-                raise EngineTimeOutORItemLimitError(e) from e
-            except Exception as e:
-                return SQLGeneration(
-                    prompt_id=user_prompt.id,
-                    tokens_used=cb.total_tokens,
-                    finetuning_id=self.finetuning_id,
-                    completed_at=datetime.datetime.now(),
-                    sql="",
-                    status="INVALID",
-                    error=str(e),
-                )
-        sql_query = ""
-        if "```sql" in result["output"]:
-            sql_query = self.remove_markdown(result["output"])
-        else:
-            for step in result["intermediate_steps"]:
-                action = step[0]
-                if type(action) == AgentAction and action.tool == "ExecuteQuery":
-                    sql_query = self.format_sql_query(action.tool_input)
-                    if "```sql" in sql_query:
-                        sql_query = self.remove_markdown(sql_query)
-        logger.info(f"cost: {str(cb.total_cost)} tokens: {str(cb.total_tokens)}")
-        response.sql = replace_unprocessable_characters(sql_query)
-        response.tokens_used = cb.total_tokens
-        response.completed_at = datetime.datetime.now()
-        return self.create_sql_query_status(
-            self.database,
-            response.sql,
-            response,
+        agent_executor.handle_parsing_errors = ERROR_PARSING_MESSAGE
+        thread = Thread(
+            target=self.stream_agent_steps,
+            args=(
+                user_prompt.text,
+                agent_executor,
+                response,
+                sql_generation_repository,
+                queue,
+                metadata,
+            ),
         )
+        thread.start()

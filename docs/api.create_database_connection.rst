@@ -104,12 +104,20 @@ HTTP 201 code response
       }
     }
 
-HTTP 400 code response (if the db connection fails it returns a 400 error)
+HTTP 400 code response (if the db connection fails it returns a 400 error), :doc:`here <api.error_codes>` you can find
+all the error codes
 
 .. code-block:: rst
 
     {
-        "detail": "string"
+      "error_code": "string",
+      "message": "string",
+      "description": "string",
+      "detail": {
+        "alias": "string",
+        "use_ssh": false,
+        "connection_uri": "string"
+      }
     }
 
 **Example 1**
@@ -197,6 +205,32 @@ Specify a schema (If it isn't specified by default it uses `public`)::
 
 "connection_uri": postgresql+psycopg2://<user>:<password>@<host>:<port>/<db-name>?options=-csearch_path=<my-schema>
 
+MySQL/MariaDB
+^^^^^^^^^^^^
+
+Uri structure::
+
+"connection_uri": mysql+pymysql://<user>:<password>@<host>:<port>/<db-name>
+
+Example::
+
+"connection_uri": mysql+pymysql://admin:123456@foo.rds.amazonaws.com:3306/my-database
+
+Microsoft SQL Server
+^^^^^^^^^^^^
+
+Uri structure::
+
+"connection_uri": mssql+pymssql://<user>:<password>@<host>:<port>/<db-name>
+
+Example::
+
+"connection_uri": mssql+pymssql://admin:123456@foo.rds.amazonaws.com:1433/my-database
+
+To specify a schema other than the default dbo, execute the following command::
+
+ALTER USER <your_username> WITH DEFAULT_SCHEMA = <your_schema_name>;
+
 Databricks
 ^^^^^^^^^^^^
 
@@ -218,6 +252,17 @@ Uri structure::
 Example::
 
 "connection_uri": snowflake://jon:123456@foo-bar/my-database/public
+
+ClickHouse
+^^^^^^^^^^^^
+
+Uri structure::
+
+"connection_uri": clickhouse+http://<user>:<password>@<host>:<port>/<db_name>?protocol=https
+
+Example::
+
+"connection_uri": clickhouse+http://jon:123456@foo-bar:8443/my-database?protocol=https
 
 AWS Athena
 ^^^^^^^^^^^^

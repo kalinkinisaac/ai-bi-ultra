@@ -82,9 +82,9 @@ ORG_ID =
 ENCRYPT_KEY = 
 
 # the variable that determines how many rows should be returned from a query to the agents, set it to small values to avoid high costs and long response times, default is 50
-UPPER_LIMIT_QUERY_RETURN_ROWS = 
+UPPER_LIMIT_QUERY_RETURN_ROWS = 50
 # the variable that force the engine to quit if the sql geneation takes more than the time set in this variable, default is None.
-DH_ENGINE_TIMEOUT =
+DH_ENGINE_TIMEOUT = 150
 ```
 
 While not strictly required, we also strongly suggest you change the MONGO username and password fields as well.
@@ -160,7 +160,7 @@ Once the engine is running, you will want to use it by:
 3. Querying the data in natural language
 
 ### Connecting to your data warehouses
-We currently support connections to Postgres, DuckDB, BigQuery, Databricks, Snowflake and AWS Athena. You can create connections to these warehouses through the API or at application start-up using the envars.
+We currently support connections to Postgres, DuckDB, BigQuery, ClickHouse, Databricks, Snowflake and AWS Athena. You can create connections to these warehouses through the API or at application start-up using the envars.
 
 #### Connecting through the API
 
@@ -314,7 +314,7 @@ curl -X 'POST' \
 }'
 ```
 
-### Run scripts
+### How to migrate data between versions
 Our engine is under ongoing development and in order to support the latest features, we provide scripts to migrate the data from the previous version to the latest version. You can find all of the scripts in the `dataherald.scripts` module. To run the migration script, execute the following command:
 
 ```

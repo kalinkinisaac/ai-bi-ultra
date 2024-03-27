@@ -7,6 +7,7 @@ from bson.objectid import ObjectId
 from pydantic import BaseModel, Field, validator
 
 from dataherald.sql_database.models.types import FileStorage, SSHSettings
+from dataherald.utils.models_context_window import OPENAI_FINETUNING_MODELS_WINDOW_SIZES
 
 
 class DBConnectionValidation(BaseModel):
@@ -128,6 +129,12 @@ class BaseLLM(BaseModel):
     model_name: str | None = None
     model_parameters: dict[str, str] | None = None
 
+    @validator("model_name")
+    def validate_model_name(cls, v: str | None):
+        if v and v not in OPENAI_FINETUNING_MODELS_WINDOW_SIZES:
+            raise ValueError(f"Model {v} not supported")  # noqa: B904
+        return v
+
 
 class Finetuning(BaseModel):
     id: str | None = None
@@ -170,6 +177,13 @@ class LLMConfig(BaseModel):
     api_base: str | None = None
 
 
+class IntermediateStep(BaseModel):
+    thought: str
+    action: str
+    action_input: str
+    observation: str
+
+
 class SQLGeneration(BaseModel):
     id: str | None = None
     prompt_id: str
@@ -177,6 +191,7 @@ class SQLGeneration(BaseModel):
     low_latency_mode: bool = False
     llm_config: LLMConfig | None
     evaluate: bool = False
+    intermediate_steps: list[IntermediateStep] | None
     sql: str | None
     status: str = "INVALID"
     completed_at: datetime | None
