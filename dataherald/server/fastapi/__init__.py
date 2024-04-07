@@ -17,7 +17,7 @@ from dataherald.api.types.requests import (
     PromptSQLGenerationRequest,
     SQLGenerationRequest,
     StreamPromptSQLGenerationRequest,
-    UpdateMetadataRequest,
+    UpdateMetadataRequest, PromptSQLGenerationNLGenerationInChatRequest,
 )
 from dataherald.api.types.responses import (
     DatabaseConnectionResponse,
@@ -26,7 +26,7 @@ from dataherald.api.types.responses import (
     NLGenerationResponse,
     PromptResponse,
     SQLGenerationResponse,
-    TableDescriptionResponse,
+    TableDescriptionResponse, ChatResponse, ChatMessageResponse,
 )
 from dataherald.config import Settings
 from dataherald.db_scanner.models.types import QueryHistory
@@ -78,6 +78,20 @@ class FastAPI(dataherald.server.Server):
             self.list_database_connections,
             methods=["GET"],
             tags=["Database connections"],
+        )
+
+        self.router.add_api_route(
+            "/api/v1/chats",
+            self.list_chats,
+            methods=["GET"],
+            tags=["Chats"],
+        )
+
+        self.router.add_api_route(
+            "/api/v1/chat_messages",
+            self.list_chat_messages,
+            methods=["GET"],
+            tags=["Chats"],
         )
 
         self.router.add_api_route(
@@ -257,6 +271,14 @@ class FastAPI(dataherald.server.Server):
         )
 
         self.router.add_api_route(
+            "/api/v1/prompts/sql-generations/nl-generations-in-chat",
+            self.create_prompt_sql_and_nl_generation_in_chat,
+            methods=["POST"],
+            status_code=201,
+            tags=["NL Generation"],
+        )
+
+        self.router.add_api_route(
             "/api/v1/prompts/sql-generations/nl-generations",
             self.create_prompt_sql_and_nl_generation,
             methods=["POST"],
@@ -368,6 +390,10 @@ class FastAPI(dataherald.server.Server):
             "/api/v1/heartbeat", self.heartbeat, methods=["GET"], tags=["System"]
         )
 
+        self.router.add_api_route(
+            "/api/v1/test", self.test, methods=["POST"], tags=["NL Generation"],
+        )
+
         self._app.include_router(self.router)
         use_route_names_as_operation_ids(self._app)
 
@@ -437,10 +463,17 @@ class FastAPI(dataherald.server.Server):
             prompt_id, nl_generation_sql_generation_request
         )
 
+
     def create_prompt_sql_and_nl_generation(
         self, request: PromptSQLGenerationNLGenerationRequest
     ) -> NLGenerationResponse:
         return self._api.create_prompt_sql_and_nl_generation(request)
+
+    def create_prompt_sql_and_nl_generation_in_chat(
+        self,
+        request: PromptSQLGenerationNLGenerationInChatRequest
+    ) -> ChatMessageResponse:
+        return self._api.create_prompt_sql_and_nl_generation_in_chat(request)
 
     def get_nl_generations(
         self, sql_generation_id: str | None = None
@@ -461,6 +494,24 @@ class FastAPI(dataherald.server.Server):
     def heartbeat(self) -> dict[str, int]:
         return self.root()
 
+    def test(self, request: PromptSQLGenerationNLGenerationRequest
+    ) -> NLGenerationResponse:
+        print(request)
+        return {
+            "id": "661176d214efa68bf5a040ee",
+            "metadata": None,
+            "created_at": "2024-04-06T16:22:42.246939+00:00",
+            "llm_config": {
+                "llm_name": "gpt-4-turbo-preview",
+                "api_base": None
+            },
+            "sql_generation_id": "661176c414efa68bf5a040ed",
+            "text": "There are 91,480 orders."
+        }
+
+    # def create_chat(self) -> ChatResponse:
+    #     return self._api.get_nl_generation(nl_generation_id)
+
     def create_database_connection(
         self, database_connection_request: DatabaseConnectionRequest
     ) -> DatabaseConnectionResponse:
@@ -470,6 +521,14 @@ class FastAPI(dataherald.server.Server):
     def list_database_connections(self) -> list[DatabaseConnection]:
         """List all database connections"""
         return self._api.list_database_connections()
+
+    def list_chats(self) -> list[ChatResponse]:
+        """List all chats"""
+        return self._api.list_chats()
+
+    def list_chat_messages(self, chat_id: str) -> list[ChatMessageResponse]:
+        """List all chats"""
+        return self._api.list_chat_messages(chat_id=chat_id)
 
     def update_database_connection(
         self,

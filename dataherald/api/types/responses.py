@@ -54,6 +54,34 @@ class NLGenerationResponse(BaseResponse):
     text: str | None
 
 
+class ChatMessageResponse(BaseModel):
+    id: str
+    # chat_message_id: str
+    chat_id: str
+    role: str
+    content: str
+    created_at: datetime
+
+# class NLGenerationInChatResponse(NLGenerationResponse):
+#     llm_config: LLMConfig | None
+#     sql_generation_id: str
+#     text: str | None
+#     chat_id: str
+
+
+class NLGenerationInChatResponse(BaseResponse):
+    llm_config: LLMConfig | None
+    sql_generation_id: str
+    text: str | None
+    chat_id: str | None
+
+
+# class ChatMessageResponse(BaseResponse):
+#     llm_config: LLMConfig | None
+#     sql_generation_id: str
+#     text: str | None
+#     chat_id: str | None
+
 class InstructionResponse(BaseResponse):
     instruction: str
     db_connection_id: str
@@ -69,3 +97,9 @@ class TableDescriptionResponse(BaseResponse, TableDescription):
 
 class GoldenSQLResponse(BaseResponse, GoldenSQL):
     pass
+
+
+class ChatResponse(BaseResponse):
+    id: str
+    title: str
+    created_at: datetime

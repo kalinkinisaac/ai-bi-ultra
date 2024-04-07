@@ -12,7 +12,7 @@ class PromptService:
         self.storage = storage
         self.prompt_repository = PromptRepository(self.storage)
 
-    def create(self, prompt_request: PromptRequest) -> Prompt:
+    def create(self, prompt_request: PromptRequest, chat_id: str = None) -> Prompt:
         db_connection_repository = DatabaseConnectionRepository(self.storage)
         db_connection = db_connection_repository.find_by_id(
             prompt_request.db_connection_id
@@ -26,6 +26,7 @@ class PromptService:
             text=prompt_request.text,
             db_connection_id=prompt_request.db_connection_id,
             metadata=prompt_request.metadata,
+            chat_id=chat_id,
         )
         return self.prompt_repository.insert(prompt)
 

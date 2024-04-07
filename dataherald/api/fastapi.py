@@ -12,26 +12,30 @@ from bson.objectid import InvalidId, ObjectId
 from fastapi import BackgroundTasks, HTTPException
 from overrides import override
 from sqlalchemy.exc import SQLAlchemyError
-
+import uuid
 from dataherald.api import API
 from dataherald.api.types.requests import (
     NLGenerationRequest,
     NLGenerationsSQLGenerationRequest,
     PromptRequest,
     PromptSQLGenerationNLGenerationRequest,
+    PromptSQLGenerationNLGenerationInChatRequest,
     PromptSQLGenerationRequest,
     SQLGenerationRequest,
     StreamPromptSQLGenerationRequest,
     UpdateMetadataRequest,
+    ChatRequest,
 )
 from dataherald.api.types.responses import (
     DatabaseConnectionResponse,
     GoldenSQLResponse,
     InstructionResponse,
     NLGenerationResponse,
+    NLGenerationInChatResponse,
     PromptResponse,
     SQLGenerationResponse,
     TableDescriptionResponse,
+    ChatResponse, ChatMessageResponse,
 )
 from dataherald.config import System
 from dataherald.context_store import ContextStore
@@ -46,6 +50,7 @@ from dataherald.db_scanner.repository.base import (
 )
 from dataherald.db_scanner.repository.query_history import QueryHistoryRepository
 from dataherald.finetuning.openai_finetuning import OpenAIFineTuning
+from dataherald.repositories.chat_messages import ChatMessageRepository
 from dataherald.repositories.database_connections import (
     DatabaseConnectionNotFoundError,
     DatabaseConnectionRepository,
@@ -55,12 +60,16 @@ from dataherald.repositories.golden_sqls import (
     GoldenSQLNotFoundError,
     GoldenSQLRepository,
 )
+from dataherald.repositories.chats import ChatRepository
+# from dataherald.repositories.chats_nl_generation_relations import ChatNLGenerationRelationRepository
 from dataherald.repositories.instructions import InstructionRepository
-from dataherald.repositories.nl_generations import NLGenerationNotFoundError
-from dataherald.repositories.prompts import PromptNotFoundError
+from dataherald.repositories.nl_generations import NLGenerationNotFoundError, NLGenerationRepository
+from dataherald.repositories.prompts import PromptNotFoundError, PromptRepository
 from dataherald.repositories.sql_generations import SQLGenerationNotFoundError
+from dataherald.services.chat_messages import ChatMessageService
 from dataherald.services.nl_generations import NLGenerationService
 from dataherald.services.prompts import PromptService
+from dataherald.services.chats import ChatService
 from dataherald.services.sql_generations import (
     EmptySQLGenerationError,
     SQLGenerationService,
@@ -84,7 +93,7 @@ from dataherald.types import (
     RefreshTableDescriptionRequest,
     ScannerRequest,
     TableDescriptionRequest,
-    UpdateInstruction,
+    UpdateInstruction, Chat,
 )
 from dataherald.utils.encrypt import FernetEncrypt
 from dataherald.utils.error_codes import error_response, stream_error_response
@@ -169,6 +178,18 @@ class FastAPI(API):
         return [TableDescriptionResponse(**row.dict()) for row in rows]
 
     @override
+    def create_chat(self, chat_request: ChatRequest) -> ChatResponse:
+        try:
+            chat = Chat(
+                title="Random name: {}".format(uuid.uuid4().hex),
+            )
+            chat_repository = ChatRepository(self.storage)
+            chat = chat_repository.insert(chat)
+        except Exception as e:
+            return error_response(e, chat_request.dict(), "chat_not_created")
+        return ChatResponse(**chat.dict())
+
+    @override
     def create_database_connection(
         self, database_connection_request: DatabaseConnectionRequest
     ) -> DatabaseConnectionResponse:
@@ -247,6 +268,33 @@ class FastAPI(API):
             DatabaseConnectionResponse(**db_connection.dict())
             for db_connection in db_connections
         ]
+
+    @override
+    def list_chats(self) -> list[ChatResponse]:
+        chat_repository = ChatRepository(self.storage)
+        chats = chat_repository.find_all()
+        return [
+            ChatResponse(**chat.dict())
+            for chat in chats
+        ]
+
+    @override
+    def list_chat_messages(self, chat_id: str) -> list[ChatMessageResponse]:
+        chat_message_repository = ChatMessageRepository(self.storage)
+        chat_messages = chat_message_repository.find_by({"chat_id": chat_id})
+        return [
+            ChatMessageResponse(**chat_message.dict())
+            for chat_message in chat_messages
+        ]
+        # nl_generation_repository = NLGenerationRepository(self.storage)
+        # nl_generations = nl_generation_repository.find_by({"chat_id": chat_id})
+        # prompt_repository = PromptRepository(self.storage)
+        # prompts = prompt_repository.find_by({"chat_id": chat_id})
+        #
+        # return [
+        #     NLGenerationResponse(**nl_generation.dict())
+        #     for nl_generation in nl_generations
+        # ]
 
     @override
     def update_database_connection(
@@ -733,6 +781,24 @@ class FastAPI(API):
             )
         return SQLGenerationResponse(**sql_generation.dict())
 
+
+    # @override
+    # def create_prompt_and_sql_generation_in_chat(
+    #     self, prompt_sql_generation_in_chat_request: PromptSQLGenerationInChatRequest
+    # ) -> SQLGenerationResponse:
+    #     try:
+    #         prompt_service = PromptService(self.storage)
+    #         prompt = prompt_service.create(prompt_sql_generation_request.prompt)
+    #         sql_generation_service = SQLGenerationService(self.system, self.storage)
+    #         sql_generation = sql_generation_service.create(
+    #             prompt.id, prompt_sql_generation_request
+    #         )
+    #     except Exception as e:
+    #         return error_response(
+    #             e, prompt_sql_generation_request.dict(), "sql_generation_not_created"
+    #         )
+    #     return SQLGenerationResponse(**sql_generation.dict())
+
     @override
     def get_sql_generations(
         self, prompt_id: str | None = None
@@ -843,6 +909,36 @@ class FastAPI(API):
             return error_response(e, request.dict(), "nl_generation_not_created")
 
         return NLGenerationResponse(**nl_generation.dict())
+
+    @override
+    def create_prompt_sql_and_nl_generation_in_chat(
+        self, request: PromptSQLGenerationNLGenerationInChatRequest
+    ) -> ChatMessageResponse:
+        prompt_service = PromptService(self.storage)
+        chat_service = ChatService(self.storage)
+        chat_message_service = ChatMessageService(self.storage)
+        if request.chat_id is not None:
+            chat = chat_service.chat_repository.find_by_id(request.chat_id)
+            if chat is None:
+                raise Exception(f"Chat {request.chat_id} not found")
+        else:
+            chat = chat_service.create()
+
+        try:
+            prompt = prompt_service.create(request.sql_generation.prompt, chat_id=chat.id)
+            prompt_chat_message = chat_message_service.from_prompt(prompt, chat)
+            sql_generation_service = SQLGenerationService(self.system, self.storage)
+            sql_generation = sql_generation_service.create(
+                prompt.id, request.sql_generation, chat_id=chat.id,
+            )
+            nl_generation_service = NLGenerationService(self.system, self.storage)
+            nl_generation = nl_generation_service.create(sql_generation.id, request, chat_id=chat.id)
+            nl_generation_chat_message = chat_message_service.from_nl_generation(nl_generation, chat)
+        except Exception as e:
+            return error_response(e, request.dict(), "nl_generation_in_chat_not_created")
+
+        return ChatMessageResponse(**nl_generation_chat_message.dict())
+
 
     @override
     def get_nl_generations(

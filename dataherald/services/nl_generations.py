@@ -25,7 +25,7 @@ class NLGenerationService:
         self.nl_generation_repository = NLGenerationRepository(storage)
 
     def create(
-        self, sql_generation_id: str, nl_generation_request: NLGenerationRequest
+        self, sql_generation_id: str, nl_generation_request: NLGenerationRequest, chat_id=None,
     ) -> NLGeneration:
         initial_nl_generation = NLGeneration(
             sql_generation_id=sql_generation_id,
@@ -34,6 +34,7 @@ class NLGenerationService:
             if nl_generation_request.llm_config
             else LLMConfig(),
             metadata=nl_generation_request.metadata,
+            chat_id=chat_id,
         )
         self.nl_generation_repository.insert(initial_nl_generation)
         sql_generation_repository = SQLGenerationRepository(self.storage)

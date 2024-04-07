@@ -1,33 +1,48 @@
 <template>
-  <div class="database-connection">
-    <h2>Connect to Your Database</h2>
-    <form class="form-container" @submit.prevent="submitConnection">
-      <label for="databaseType">Database Type:</label>
-      <select id="databaseType" v-model="connectionData.databaseType">
-        <option value="Postgres">Postgres</option>
-        <option value="BigQuery">BigQuery</option>
-        <option value="Databricks">Databricks</option>
-        <option value="Snowflake">Snowflake</option>
-      </select>
-      <label for="db_connection_id">Connection ID:</label>
-      <input type="text" id="db_connection_id" v-model="connectionData.db_connection_id"/>
-      <label for="use_ssh">Use SSH:</label>
-      <input type="checkbox" id="use_ssh" v-model="connectionData.use_ssh"/>
-      <label for="connection_uri">Connection URI:</label>
-      <input type="text" id="connection_uri" v-model="connectionData.connection_uri"/>
-      <button type="submit">Connect</button>
+  <div class="max-w-lg mx-auto my-10 p-6 border border-gray-300 rounded-md shadow-md">
+    <h2 class="text-2xl font-bold text-center text-gray-700 mb-6">Connect to Your Database</h2>
+    <form class="space-y-4" @submit.prevent="submitConnection">
+      <div>
+        <label for="databaseType" class="block text-sm font-medium text-gray-700">Database Type:</label>
+        <select id="databaseType" v-model="connectionData.databaseType"
+                class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+          <option value="Postgres">Postgres</option>
+          <option value="BigQuery">BigQuery</option>
+          <option value="Databricks">Databricks</option>
+          <option value="Snowflake">Snowflake</option>
+        </select>
+      </div>
+      <div>
+        <label for="db_connection_id" class="block text-sm font-medium text-gray-700">Connection ID:</label>
+        <input type="text" id="db_connection_id" v-model="connectionData.db_connection_id"
+               class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"/>
+      </div>
+      <div class="flex items-center">
+        <input type="checkbox" id="use_ssh" v-model="connectionData.use_ssh"
+               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"/>
+        <label for="use_ssh" class="ml-2 block text-sm text-gray-700">Use SSH:</label>
+      </div>
+      <div>
+        <label for="connection_uri" class="block text-sm font-medium text-gray-700">Connection URI:</label>
+        <input type="text" id="connection_uri" v-model="connectionData.connection_uri"
+               class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"/>
+      </div>
+      <button type="submit"
+              class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        Connect
+      </button>
     </form>
     <!-- Success message -->
-    <div v-if="successMessage" class="success-message">
+    <div v-if="successMessage" class="mt-4 p-4 bg-green-100 text-green-800 border border-green-400 rounded">
       {{ successMessage }}
     </div>
     <!-- Error message -->
-    <div v-if="errorMessage" class="error-message">
+    <div v-if="errorMessage" class="mt-4 p-4 bg-red-100 text-red-800 border border-red-400 rounded">
       {{ errorMessage }}
     </div>
-
   </div>
 </template>
+
 
 <script>
 import axios from 'axios'; // Make sure to install axios if you haven't: npm install axios

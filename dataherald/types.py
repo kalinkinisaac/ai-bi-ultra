@@ -170,6 +170,7 @@ class Prompt(BaseModel):
     db_connection_id: str
     created_at: datetime = Field(default_factory=datetime.now)
     metadata: dict | None
+    chat_id: str | None
 
 
 class LLMConfig(BaseModel):
@@ -200,6 +201,7 @@ class SQLGeneration(BaseModel):
     error: str | None
     created_at: datetime = Field(default_factory=datetime.now)
     metadata: dict | None
+    chat_id: str | None
 
 
 class NLGeneration(BaseModel):
@@ -209,3 +211,35 @@ class NLGeneration(BaseModel):
     text: str | None
     created_at: datetime = Field(default_factory=datetime.now)
     metadata: dict | None
+    chat_id: str | None
+
+
+class Chat(BaseModel):
+    id: str | None = None
+    title: str
+    created_at: datetime = Field(default_factory=datetime.now)
+
+
+class ChatMessage(BaseModel):
+    id: str | None = None
+    chat_id: str
+    role: str
+    content: str
+    created_at: datetime = Field(default_factory=datetime.now)
+
+
+class ChatNLGenerationRelation(BaseModel):
+    chat_id: str
+    nl_generation_id: str
+
+    @validator("chat_id", "nl_generation_id")
+    def validate_ids(cls, v: str):
+        try:
+            ObjectId(v)
+        except InvalidId:
+            raise ValueError("Must be a valid ObjectId")
+        return v
+
+
+class ChatRequest(BaseModel):
+    prompt: str

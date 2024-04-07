@@ -1,37 +1,37 @@
 <template>
-  <div class="query-data">
-    <h2>Query Your Data</h2>
+  <div class="max-w-2xl mx-auto my-8 space-y-6">
+    <h2 class="text-3xl font-bold text-center text-gray-800">Query Your Data</h2>
 
-    <select v-model="selectedConnectionId">
-      <option disabled value="">Select a connection</option>
-      <option v-for="connection in connections" :key="connection.id" :value="connection.id">
-        {{ connection.alias }} ({{ connection.id }})
-      </option>
-    </select>
-    <button @click="syncSchemas">Sync Schemas</button>
-    <textarea v-model="naturalQuestion" placeholder="Type your question in natural language"></textarea>
-<!--    <p>Selected Connection ID: {{ selectedConnectionId }}</p>-->
-
-
-<!--    <input type="text" v-model="db_connection_id" placeholder="Database Connection ID">-->
-    <button @click="submitQuestion">Generate SQL Query</button>
-
-    <div v-if="nlResponse">
-      <h3>Generated response in natural language:</h3>
-      <pre>{{ nlResponse }}</pre>
+    <div class="space-y-4">
+      <div>
+        <label for="databaseType" class="block text-sm font-medium text-gray-700">Select a connection</label>
+        <select v-model="selectedConnectionId" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+          <option disabled value="">Select a connection</option>
+          <option v-for="connection in connections" :key="connection.id" :value="connection.id">
+            {{ connection.alias }} ({{ connection.id }})
+          </option>
+        </select>
+      </div>
+      <button @click="syncSchemas" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        Sync Schemas
+      </button>
+      <textarea v-model="naturalQuestion" placeholder="Type your question in natural language" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-indigo-500"></textarea>
+      <button @click="submitQuestion" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+        Generate SQL Query
+      </button>
     </div>
-    <div v-if="generatedSql">
-      <h3>Generated SQL Query:</h3>
-      <pre>{{ generatedSql }}</pre>
+
+    <div v-if="nlResponse" class="bg-blue-100 border-t border-b border-blue-500 text-blue-700 px-4 py-3" role="alert">
+      <h3 class="font-bold">Generated response in natural language:</h3>
+      <pre class="whitespace-pre-wrap">{{ nlResponse }}</pre>
     </div>
-    <!--    <button v-if="generatedSql" @click="runQuery">Run Query</button>-->
-    <!--    <div class="message-container">-->
-    <!--      <div v-for="message in messages" :key="message.id" class="message-box">-->
-    <!--        {{ message.text }}-->
-    <!--      </div>-->
-    <!--    </div>-->
+    <div v-if="generatedSql" class="bg-green-100 border-t border-b border-green-500 text-green-700 px-4 py-3" role="alert">
+      <h3 class="font-bold">Generated SQL Query:</h3>
+      <pre class="whitespace-pre-wrap">{{ generatedSql }}</pre>
+    </div>
   </div>
 </template>
+
 
 
 <script>

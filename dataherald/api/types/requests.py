@@ -47,5 +47,14 @@ class PromptSQLGenerationNLGenerationRequest(NLGenerationRequest):
     sql_generation: PromptSQLGenerationRequest
 
 
+class PromptSQLGenerationNLGenerationInChatRequest(NLGenerationRequest):
+    sql_generation: PromptSQLGenerationRequest
+    chat_id: str | None
+
+
 class UpdateMetadataRequest(BaseModel):
     metadata: dict | None
+
+
+class ChatRequest(BaseModel):
+    prompt: str

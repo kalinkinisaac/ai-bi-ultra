@@ -14,6 +14,7 @@ from dataherald.api.types.requests import (
     SQLGenerationRequest,
     StreamPromptSQLGenerationRequest,
     UpdateMetadataRequest,
+    ChatRequest, PromptSQLGenerationNLGenerationInChatRequest,
 )
 from dataherald.api.types.responses import (
     DatabaseConnectionResponse,
@@ -23,6 +24,7 @@ from dataherald.api.types.responses import (
     PromptResponse,
     SQLGenerationResponse,
     TableDescriptionResponse,
+    ChatResponse, ChatMessageResponse,
 )
 from dataherald.config import Component
 from dataherald.db_scanner.models.types import QueryHistory
@@ -251,6 +253,12 @@ class API(Component, ABC):
     ) -> NLGenerationResponse:
         pass
 
+    def create_prompt_sql_and_nl_generation_in_chat(
+        self,
+        request: PromptSQLGenerationNLGenerationInChatRequest
+    ) -> ChatMessageResponse:
+        pass
+
     @abstractmethod
     def get_nl_generations(
         self, sql_generation_id: str | None = None
@@ -273,3 +281,22 @@ class API(Component, ABC):
         request: StreamPromptSQLGenerationRequest,
     ):
         pass
+
+    # @abstractmethod
+    # def create_database_connection(
+    #         self, database_connection_request: DatabaseConnectionRequest
+    # ) -> DatabaseConnectionResponse:
+    #     pass
+
+    @abstractmethod
+    def create_chat(self, chat_request: ChatRequest) -> ChatResponse:
+        pass
+
+    @abstractmethod
+    def list_chats(self) -> List[ChatResponse]:
+        pass
+
+    @abstractmethod
+    def list_chat_messages(self, chat_id: str) -> List[ChatMessageResponse]:
+        pass
+

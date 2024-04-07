@@ -1,13 +1,25 @@
 <template>
-  <div class="connections-list">
-    <h2>All connections</h2>
-    <button @click="fetchConnections">Refresh Connections</button>
-    <div class="connection-item" v-for="connection in connections" :key="connection.id">
-      <h3>{{ connection.alias }}</h3>
-      <p>Connection ID: {{ connection.id }}</p>
-      <p>Use SSH: {{ connection.use_ssh ? 'Yes' : 'No' }}</p>
-      <p>Connection URI: {{ connection.connection_uri }}</p>
-      <p>Created At: {{ connection.created_at }}</p>
+  <div class="max-w-xl mx-auto">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4">All connections</h2>
+    <button
+      class="bg-blue-500 text-white active:bg-blue-600 font-bold uppercase text-xs px-4 py-2 rounded shadow hover:shadow-md outline-none focus:outline-none mr-1 mb-5 ease-linear transition-all duration-150"
+      type="button"
+      @click="fetchConnections"
+    >
+      Refresh Connections
+    </button>
+    <div class="space-y-4">
+      <div
+        class="connection-item p-4 border border-gray-300 rounded-lg"
+        v-for="connection in connections"
+        :key="connection.id"
+      >
+        <h3 class="text-lg font-semibold text-gray-700">{{ connection.alias }}</h3>
+        <p class="text-gray-600">Connection ID: {{ connection.id }}</p>
+        <p class="text-gray-600">Use SSH: <span class="font-semibold" :class="{'text-green-500': connection.use_ssh, 'text-red-500': !connection.use_ssh}">{{ connection.use_ssh ? 'Yes' : 'No' }}</span></p>
+        <p class="text-gray-600">Connection URI: {{ connection.connection_uri }}</p>
+        <p class="text-gray-600">Created At: {{ connection.created_at }}</p>
+      </div>
     </div>
   </div>
 </template>

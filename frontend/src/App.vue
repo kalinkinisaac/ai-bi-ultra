@@ -1,7 +1,7 @@
 <template>
-  <div id="app">
+  <div id="app" class="flex flex-col h-screen">
     <Navbar />
-    <div class="container mt-3">
+    <div class="flex-1 overflow-hidden">
       <router-view/>
     </div>
   </div>
@@ -19,6 +19,7 @@ export default {
 }
 </script>
 
+<!-- No global padding or margin is required; Tailwind utility classes handle the spacing -->
 <style>
-/* Global styles */
+/* Styles removed as Tailwind handles layout and spacing */
 </style>

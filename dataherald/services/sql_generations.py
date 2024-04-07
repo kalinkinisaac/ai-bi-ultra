@@ -64,7 +64,7 @@ class SQLGenerationService:
         return self.sql_generation_repository.update(initial_sql_generation)
 
     def create(
-        self, prompt_id: str, sql_generation_request: SQLGenerationRequest
+        self, prompt_id: str, sql_generation_request: SQLGenerationRequest, chat_id: str = None,
     ) -> SQLGeneration:
         initial_sql_generation = SQLGeneration(
             prompt_id=prompt_id,
@@ -73,6 +73,7 @@ class SQLGenerationService:
             if sql_generation_request.llm_config
             else LLMConfig(),
             metadata=sql_generation_request.metadata,
+            chat_id=chat_id,
         )
         langsmith_metadata = (
             sql_generation_request.metadata.get("lang_smith", {})
