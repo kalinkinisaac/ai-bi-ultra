@@ -1,5 +1,6 @@
 <template>
   <div class="flex-1 overflow-y-auto p-4">
+    <DBSyncControl :connections="connections" @db-connection-selected="handleDBConnectionSelected"/>
     <deep-chat
         style="border-radius: 4px; width: calc(100vw - 256px - 2 * 16px); height: calc(100vh - 158px - 2 * 16px);"
         :demo.prop="true"
@@ -15,10 +16,13 @@
 
 <script>
 import 'deep-chat'; // Ensure deep-chat is globally registered or import as a component
+import DBSyncControl from './DBSyncControl.vue';
 
 export default {
   name: "ChatDev",
-
+  components: {
+    DBSyncControl
+  },
 
   data() {
     return {
@@ -37,7 +41,12 @@ export default {
     }
   },
   methods: {
-
+ handleDBConnectionSelected(connectionId) {
+      this.db_connection_id = connectionId;
+      // Optionally, reset messages and fetch new ones based on the new connection
+      // this.messages = [];
+      // this.fetchMessages(this.activeChatId);
+    },
 
     requestInterceptor(requestDetails) {
       console.log('requestInterceptor');
@@ -45,12 +54,13 @@ export default {
       // Transform the outgoing request to match your backend's expected format
       // const promptText = requestDetails.body.messages[0].text; // Extract the text from the message
 
+      const promptText = requestDetails.body.messages[0].text; // Extract the text from the message
 
       // Construct the payload as required by your backend API
       const payload = {
         prompt: {
-            "db_connection_id": "660449d4297f4ac62a25e0a5",
-            "text": "Какой тип транспорта доставляет быстрее всего?",
+            "db_connection_id": this.db_connection_id,
+            "text": promptText,
         }
         // chat_id: this.activeChatId
       };
