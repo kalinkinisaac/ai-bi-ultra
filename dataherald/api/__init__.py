@@ -282,6 +282,12 @@ class API(Component, ABC):
     ):
         pass
 
+    @abstractmethod
+    async def fake_stream_sql_generation(
+        self, request: PromptSQLGenerationNLGenerationInChatRequest
+    ):
+        pass
+
     # @abstractmethod
     # def create_database_connection(
     #         self, database_connection_request: DatabaseConnectionRequest

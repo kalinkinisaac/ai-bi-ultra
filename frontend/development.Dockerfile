@@ -1,16 +1,27 @@
-# Possible frontend/development.Dockerfile for development
+# Use a specific version of node if 'lts-alpine' causes any compatibility issues.
 FROM node:lts-alpine as development-stage
 
 # Set working directory
 WORKDIR /app
 
-# Install app dependencies by copying package.json files and running npm install
+# Copy package.json and package-lock.json (or npm-shrinkwrap.json)
 COPY package*.json ./
-RUN npm install --ignore-scripts --unsafe-perm --loglevel verbose && ls node_modules/
 
+# Install dependencies
+RUN npm install --unsafe-perm --loglevel verbose
+
+# RUN npm run build
+
+# Verify vite is installed
+#RUN vite --version
+
+#RUN npm install vite
+
+#RUN vite --version
 # Copy the rest of the project files
 COPY . .
 
 # Start the development server with hot reload
-# Note: the command can vary based on your project, e.g., npm start, npm run dev, etc.
-CMD ["npm", "run", "serve"]
+CMD ["npm", "run", "dev"]
+#CMD ["npx", "vite", "preview"]
+#CMD ["tail", "-f", "/dev/null"]

@@ -28,6 +28,7 @@ services:
     volumes:
       - ./frontend:/app  # Mounts the code into the container
       - /app/node_modules # To avoid replacing node_modules with a host's folder
+      - /app/dist # To avoid replacing node_modules with a host's folder
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080" ]
       interval: 30s

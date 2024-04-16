@@ -999,9 +999,28 @@ class FastAPI(API):
                 value = queue.get()
                 if value is None:
                     break
-                yield value
+
+                value = value.replace('```sql', '\n```sql')
+                # yield value
+                yield "data: {}\n\n".format(json.dumps({"text": value + '\n\n'}))
                 queue.task_done()
                 await asyncio.sleep(0.001)
+        except Exception as e:
+            yield json.dumps(
+                stream_error_response(e, request.dict(), "nl_generation_not_created")
+            )
+
+    @override
+    async def fake_stream_sql_generation(
+        self,
+        request: PromptSQLGenerationNLGenerationInChatRequest,
+    ):
+        try:
+            for i in range(100):
+                # yield f"{i}"
+                yield "data: {}\n\n".format(json.dumps({"text": str(i)}))
+                # queue.task_done()
+                await asyncio.sleep(0.25)
         except Exception as e:
             yield json.dumps(
                 stream_error_response(e, request.dict(), "nl_generation_not_created")

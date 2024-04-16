@@ -17,6 +17,9 @@
             <li>
               <router-link class="text-gray-700 hover:text-gray-500 hover:border-b-2 hover:border-gray-500" to="/chat">Chat</router-link>
             </li>
+            <li>
+              <router-link class="text-gray-700 hover:text-gray-500 hover:border-b-2 hover:border-gray-500" to="/chat_dev">ChatDev</router-link>
+            </li>
           </ul>
         </div>
         <!-- Mobile menu button -->

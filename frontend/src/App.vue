@@ -10,9 +10,11 @@
 
 <script>
 import Navbar from './components/Navbar.vue'
-
+import {SuperTokensConfig} from "@/config";
+console.log("@!!(@!IBENL@!JEBNL@!JNEKL@!JNEKLJ@!NEKJLN!ASASZZZZ");
+console.log(SuperTokensConfig);
 export default {
-  name: 'App',
+  name: 'App1',
   components: {
     Navbar
   }

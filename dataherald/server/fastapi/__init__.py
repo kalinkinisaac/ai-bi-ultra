@@ -58,9 +58,11 @@ def use_route_names_as_operation_ids(app: _FastAPI) -> None:
 
 
 class FastAPI(dataherald.server.Server):
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, middleware=None):
         super().__init__(settings)
         self._app = fastapi.FastAPI(debug=True)
+        if middleware:
+            self._app.add_middleware(middleware)
         self._api: dataherald.api.API = dataherald.client(settings)
 
         self.router = fastapi.APIRouter()
@@ -387,6 +389,13 @@ class FastAPI(dataherald.server.Server):
         )
 
         self.router.add_api_route(
+            "/api/v1/fake-stream-sql-generation",
+            self.fake_stream_sql_generation,
+            methods=["POST"],
+            tags=["Fake Stream SQL Generation"],
+        )
+
+        self.router.add_api_route(
             "/api/v1/heartbeat", self.heartbeat, methods=["GET"], tags=["System"]
         )
 
@@ -674,5 +683,13 @@ class FastAPI(dataherald.server.Server):
     ) -> StreamingResponse:
         return StreamingResponse(
             self._api.stream_create_prompt_and_sql_generation(request),
+            media_type="text/event-stream",
+        )
+
+    async def fake_stream_sql_generation(
+        self, request: PromptSQLGenerationNLGenerationInChatRequest
+    ) -> StreamingResponse:
+        return StreamingResponse(
+            self._api.fake_stream_sql_generation(request),
             media_type="text/event-stream",
         )

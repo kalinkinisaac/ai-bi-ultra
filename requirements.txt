@@ -1,6 +1,6 @@
 dnspython==2.3.0
 fastapi==0.98.0
-httpx==0.27.0
+httpx==0.26.0
 langchain==0.1.11
 langchain-community==0.0.25
 langchain-openai==0.0.8
@@ -43,3 +43,5 @@ PyMySQL==1.1.0
 clickhouse-sqlalchemy==0.2.5
 astrapy==0.7.6
 pymssql==2.2.11
+supertokens-python==0.18.10
+
