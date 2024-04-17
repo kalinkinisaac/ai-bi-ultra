@@ -18,9 +18,9 @@ class ChatService:
         self.chat_repository = ChatRepository(storage)
 
     def create(
-        self,
+        self, id=None,
     ) -> Chat:
-        initial_chat = Chat(title="Random name: {}".format(uuid.uuid4().hex))
+        initial_chat = Chat(id=id, title="Random name: {}".format(uuid.uuid4().hex))
         return self.chat_repository.insert(initial_chat)
 
     def get(self, query) -> list[Chat]:

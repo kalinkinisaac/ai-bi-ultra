@@ -17,7 +17,7 @@ from dataherald.api.types.requests import (
     PromptSQLGenerationRequest,
     SQLGenerationRequest,
     StreamPromptSQLGenerationRequest,
-    UpdateMetadataRequest, PromptSQLGenerationNLGenerationInChatRequest,
+    UpdateMetadataRequest, PromptSQLGenerationNLGenerationInChatRequest, StreamPromptSQLGenerationRequestInChat,
 )
 from dataherald.api.types.responses import (
     DatabaseConnectionResponse,
@@ -387,7 +387,12 @@ class FastAPI(dataherald.server.Server):
             methods=["POST"],
             tags=["Stream SQL Generation"],
         )
-
+        self.router.add_api_route(
+            "/api/v1/stream-sql-generation_in_chat",
+            self.stream_sql_generation_in_chat,
+            methods=["POST"],
+            tags=["Stream SQL Generation"],
+        )
         self.router.add_api_route(
             "/api/v1/fake-stream-sql-generation",
             self.fake_stream_sql_generation,
@@ -683,6 +688,12 @@ class FastAPI(dataherald.server.Server):
     ) -> StreamingResponse:
         return StreamingResponse(
             self._api.stream_create_prompt_and_sql_generation(request),
+            media_type="text/event-stream",
+        )
+
+    async def stream_sql_generation_in_chat(self, request: StreamPromptSQLGenerationRequestInChat):
+        return StreamingResponse(
+            self._api.stream_create_prompt_and_sql_generation_in_chat(request),
             media_type="text/event-stream",
         )
 

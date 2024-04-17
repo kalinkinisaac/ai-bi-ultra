@@ -9,6 +9,7 @@
         :responseInterceptor="responseInterceptor"
         :request="chatRequest"
         :initialMessages.prop="messages"
+        :stream.prop="true"
     ></deep-chat>
   </div>
 </template>
@@ -31,7 +32,8 @@ export default {
     return {
       messages: [], // Messages to display in the chat window
       chatRequest: {
-        url: `/api/v1/prompts/sql-generations/nl-generations-in-chat`, // API endpoint to fetch messages based on chatId
+        // url: `/api/v1/prompts/sql-generations/nl-generations-in-chat`, // API endpoint to fetch messages based on chatId
+        url: `/api/v1/stream-sql-generation_in_chat`,
         method: 'POST',
         headers: {'Content-Type': 'application/json', 'Accept': 'application/json'}
       },
@@ -88,22 +90,49 @@ export default {
 
 
       // Construct the payload as required by your backend API
-      const payload = {
-        llm_config: {"llm_name": "gpt-4-turbo-preview"},
-        max_rows: 100,
-        sql_generation: {
-          "low_latency_mode": false,
-          "llm_config": {"llm_name": "gpt-4-turbo-preview"},
-          "evaluate": false,
-          "metadata": {},
+      // const payload = {
+      //   llm_config: {"llm_name": "gpt-4-turbo-preview"},
+      //   max_rows: 100,
+      //   sql_generation: {
+      //     "low_latency_mode": false,
+      //     "llm_config": {"llm_name": "gpt-4-turbo-preview"},
+      //     "evaluate": false,
+      //     "metadata": {},
+      //     "prompt": {
+      //       "text": promptText,
+      //       "db_connection_id": this.db_connection_id,
+      //       "metadata": {}
+      //     },
+      //   },
+      //   chat_id: this.activeChatId
+      // };
+
+      // Replace the original request body with the transformed payload
+      // requestDetails.body = payload;
+      let payload;
+      if (this.activeChatId) {
+        payload = {
+
           "prompt": {
             "text": promptText,
             "db_connection_id": this.db_connection_id,
             "metadata": {}
           },
-        },
-        chat_id: this.activeChatId
-      };
+
+          chat_id: this.activeChatId
+        };
+      } else {
+        payload = {
+
+          "prompt": {
+            "text": promptText,
+            "db_connection_id": this.db_connection_id,
+            "metadata": {}
+          },
+
+        };
+      }
+
 
       // Replace the original request body with the transformed payload
       requestDetails.body = payload;
@@ -117,8 +146,15 @@ export default {
       // This assumes your backend sends back a JSON object with a "text" property for the response
       if (response && response.chat_id) {
         const transformedResponse = {
-          text: response.content // The message to be displayed by deep-chat
+          text: response.text // The message to be displayed by deep-chat
         };
+        // emit change chat:
+        if(response.chat_id && response.chat_id !== this.activeChatId) {
+          // this.$emit('changeChat', response.chat_id);
+        }
+        // this.$emit('changeChat', response.chat_id);
+        // and refresh chat list
+        // this.fetchMessages(response.chat_id);
         return transformedResponse;
       } else {
         // If the response format is not what's expected, throw an error or return a default message

@@ -17,8 +17,15 @@ class ChatMessageService:
 
     def create(
             self,
+            chat_id: str,
+            role: str,
+            content: str,
     ) -> ChatMessage:
-        initial_chat_message = ChatMessage()
+        initial_chat_message = ChatMessage(
+            chat_id=chat_id,
+            role=role,
+            content=content,
+        )
         return self.chat_message_repository.insert(initial_chat_message)
 
     def from_prompt(self, prompt: Prompt, chat: Chat) -> ChatMessage:
@@ -41,6 +48,9 @@ class ChatMessageService:
 
     def get(self, query) -> list[ChatMessage]:
         return self.chat_message_repository.find_by(query)
+
+    # def append_content(self, content: str):
+    #     self.
 
     def update_metadata(self, chat_message_id, metadata_request) -> ChatMessage:
         chat_message = self.chat_message_repository.find_by_id(chat_message_id)

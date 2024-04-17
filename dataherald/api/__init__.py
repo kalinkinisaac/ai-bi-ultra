@@ -14,7 +14,7 @@ from dataherald.api.types.requests import (
     SQLGenerationRequest,
     StreamPromptSQLGenerationRequest,
     UpdateMetadataRequest,
-    ChatRequest, PromptSQLGenerationNLGenerationInChatRequest,
+    ChatRequest, PromptSQLGenerationNLGenerationInChatRequest, StreamPromptSQLGenerationRequestInChat,
 )
 from dataherald.api.types.responses import (
     DatabaseConnectionResponse,
@@ -279,6 +279,13 @@ class API(Component, ABC):
     async def stream_create_prompt_and_sql_generation(
         self,
         request: StreamPromptSQLGenerationRequest,
+    ):
+        pass
+
+    @abstractmethod
+    async def stream_create_prompt_and_sql_generation_in_chat(
+        self,
+        request: StreamPromptSQLGenerationRequestInChat
     ):
         pass
 

@@ -52,6 +52,11 @@ class PromptSQLGenerationNLGenerationInChatRequest(NLGenerationRequest):
     chat_id: str | None
 
 
+class StreamPromptSQLGenerationRequestInChat(StreamSQLGenerationRequest):
+    prompt: PromptRequest
+    chat_id: str | None
+
+
 class UpdateMetadataRequest(BaseModel):
     metadata: dict | None
 

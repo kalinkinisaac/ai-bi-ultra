@@ -70,7 +70,7 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
     if (to.matched.some(record => record.meta.requiresAuth)) {
-        const sessionExists = await Session.doesSessionExist();
+        const sessionExists = true //await Session.doesSessionExist();
         if (!sessionExists) {
             next({ name: 'auth' }); // Redirect to the auth route or login page
         } else {

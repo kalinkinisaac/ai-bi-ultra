@@ -46,6 +46,15 @@ export default defineComponent({
       this.$emit('changeChat', chatId); // Emit the changeChat event with the selected chatId
     },
   },
+  watch: {
+        activeChatId: function(newVal, oldVal) { // watch it
+          this.fetchChatList();
+          console.log('Prop changed: ', newVal, ' | was: ', oldVal);
+          if (newVal) {
+            this.selectChat(newVal);
+          }
+        }
+      }
 });
 </script>
 

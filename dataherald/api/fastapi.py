@@ -24,7 +24,7 @@ from dataherald.api.types.requests import (
     SQLGenerationRequest,
     StreamPromptSQLGenerationRequest,
     UpdateMetadataRequest,
-    ChatRequest,
+    ChatRequest, StreamPromptSQLGenerationRequestInChat,
 )
 from dataherald.api.types.responses import (
     DatabaseConnectionResponse,
@@ -914,9 +914,17 @@ class FastAPI(API):
     def create_prompt_sql_and_nl_generation_in_chat(
         self, request: PromptSQLGenerationNLGenerationInChatRequest
     ) -> ChatMessageResponse:
+
         prompt_service = PromptService(self.storage)
         chat_service = ChatService(self.storage)
         chat_message_service = ChatMessageService(self.storage)
+        if request.sql_generation.prompt.text.startswith('test'):
+            chat_id = request.sql_generation.prompt.text.removeprefix('test')
+            chat = chat_service.chat_repository.find_by_id(chat_id)
+            if chat is None:
+                chat = chat_service.create()
+            return ChatMessageResponse(id=1, chat_id=chat.id,
+                                       role='assistant', content='test response', created_at=datetime.datetime.now(), )
         if request.chat_id is not None:
             chat = chat_service.chat_repository.find_by_id(request.chat_id)
             if chat is None:
@@ -1009,6 +1017,55 @@ class FastAPI(API):
             yield json.dumps(
                 stream_error_response(e, request.dict(), "nl_generation_not_created")
             )
+
+    @override
+    async def stream_create_prompt_and_sql_generation_in_chat(
+            self,
+            request: StreamPromptSQLGenerationRequestInChat,
+    ):
+        prompt_service = PromptService(self.storage)
+        chat_service = ChatService(self.storage)
+        chat_message_service = ChatMessageService(self.storage)
+        partial_message = ''
+
+        if request.chat_id is not None:
+            chat = chat_service.chat_repository.find_by_id(request.chat_id)
+            if chat is None:
+                raise Exception(f"Chat {request.chat_id} not found")
+        else:
+            chat = chat_service.create()
+
+        try:
+            queue = Queue()
+            sql_generation_service = SQLGenerationService(self.system, self.storage)
+            prompt = prompt_service.create(request.prompt)
+            prompt_chat_message = chat_message_service.from_prompt(prompt, chat)
+            sql_generation_service.start_streaming(prompt.id, request, queue)
+
+            while True:
+                value = queue.get()
+                if value is None:
+                    break
+
+                value = value.replace('```sql', '\n```sql')
+                # yield value
+
+                partial_message += value + '\n\n'
+                yield "data: {}\n\n".format(json.dumps({"text": value + '\n\n', "chat_id": chat.id}))
+
+                queue.task_done()
+                await asyncio.sleep(0.001)
+        except Exception as e:
+            yield "data: {}\n\n".format(json.dumps(
+                stream_error_response(e, request.dict(), "nl_generation_not_created")
+            ))
+        finally:
+            if partial_message != '':
+                chat_message_service.create(
+                    chat_id=chat.id,
+                    role="assistant",
+                    content=partial_message,
+                )
 
     @override
     async def fake_stream_sql_generation(

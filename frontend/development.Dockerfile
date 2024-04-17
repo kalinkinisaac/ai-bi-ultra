@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install --unsafe-perm --loglevel verbose
+RUN npm ci --loglevel verbose
 
 # RUN npm run build
 
