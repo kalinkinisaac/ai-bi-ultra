@@ -244,8 +244,9 @@ class SQLGenerationService:
                 metadata=langsmith_metadata,
             )
         except Exception as e:
-            self.update_error(initial_sql_generation, str(e))
-            raise SQLGenerationError(str(e), initial_sql_generation.id) from e
+            full_description = str(e) + str(getattr(e, 'description', ''))
+            self.update_error(initial_sql_generation, full_description)
+            raise SQLGenerationError(full_description, initial_sql_generation.id) from e
 
     def get(self, query) -> list[SQLGeneration]:
         return self.sql_generation_repository.find_by(query)
