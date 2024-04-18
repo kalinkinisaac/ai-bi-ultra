@@ -7,10 +7,32 @@
         :textInput.prop="{ placeholder: { text: 'Type your message...' } }"
         :requestInterceptor="requestInterceptor"
         :responseInterceptor="responseInterceptor"
+        :validateInput="validateInput"
         :request="chatRequest"
         :initialMessages.prop="messages"
         :stream.prop="true"
-    ></deep-chat>
+        :errorMessages.prop='{displayServiceErrorMessages: true}'
+    >
+      <div
+          style="
+      width: 200px;
+      background-color: #f3f3f3;
+      border-radius: 10px;
+      padding: 12px;
+      padding-bottom: 15px;
+      display: none;
+    "
+      >
+        <div>
+          <div style="text-align: center; margin-bottom: 8px; font-size: 16px">
+            <b>Intro panel</b>
+          </div>
+          <div style="font-size: 15px; line-height: 20px">
+            Insert a description to help your users understand how to use the component.
+          </div>
+        </div>
+      </div>
+    </deep-chat>
   </div>
 </template>
 
@@ -149,7 +171,7 @@ export default {
           text: response.text // The message to be displayed by deep-chat
         };
         // emit change chat:
-        if(response.chat_id && response.chat_id !== this.activeChatId) {
+        if (response.chat_id && response.chat_id !== this.activeChatId) {
           // this.$emit('changeChat', response.chat_id);
         }
         // this.$emit('changeChat', response.chat_id);
@@ -163,10 +185,28 @@ export default {
       }
     },
 
+    validateInput(text, files) {
+      // console.log('validating');
+      // console.log((this.db_connection_id !== null) && text)
+      // return (this.db_connection_id !== null) && text;
+      return text
+    },
+
   },
   created() {
+
     // Initial fetch for messages when the component is created
     this.fetchMessages(this.activeChatId);
+    // this.messages += [
+    //   {
+    //     html: `
+    //   <div class="deep-chat-temporary-message">
+    //     <button class="deep-chat-button deep-chat-suggestion-button" style="margin-top: 5px">What do shrimps eat?</button>
+    //     <button class="deep-chat-button deep-chat-suggestion-button" style="margin-top: 6px">Can a shrimp fry rice?</button>
+    //     <button class="deep-chat-button deep-chat-suggestion-button" style="margin-top: 6px">What is a pistol shrimp?</button>
+    //   </div>`,
+    //     role: 'ai',
+    //   }]
     // this.fetchConnections();
   }
 };

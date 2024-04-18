@@ -922,7 +922,7 @@ class FastAPI(API):
             chat_id = request.sql_generation.prompt.text.removeprefix('test')
             chat = chat_service.chat_repository.find_by_id(chat_id)
             if chat is None:
-                chat = chat_service.create()
+                chat = chat_service.create(title=request.sql_generation.prompt.text)
             return ChatMessageResponse(id=1, chat_id=chat.id,
                                        role='assistant', content='test response', created_at=datetime.datetime.now(), )
         if request.chat_id is not None:
@@ -930,7 +930,7 @@ class FastAPI(API):
             if chat is None:
                 raise Exception(f"Chat {request.chat_id} not found")
         else:
-            chat = chat_service.create()
+            chat = chat_service.create(title=request.sql_generation.prompt.text)
 
         try:
             prompt = prompt_service.create(request.sql_generation.prompt, chat_id=chat.id)
@@ -1033,7 +1033,7 @@ class FastAPI(API):
             if chat is None:
                 raise Exception(f"Chat {request.chat_id} not found")
         else:
-            chat = chat_service.create()
+            chat = chat_service.create(title=request.prompt.text)
 
         try:
             queue = Queue()

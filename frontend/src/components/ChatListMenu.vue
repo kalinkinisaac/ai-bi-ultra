@@ -32,16 +32,24 @@ export default defineComponent({
   },
   methods: {
     async fetchChatList() {
-      try {
-        const response = await fetch('/api/v1/chats');
-        if (!response.ok) throw new Error('Failed to fetch chat list');
-        const chatsData = await response.json();
-        this.chats = chatsData.map(chat => ({id: chat.id, name: chat.title}));
-      } catch (error) {
-        console.error('Error fetching chat list:', error.message);
-        // Handle error (e.g., show an error message)
-      }
-    },
+    try {
+      const response = await fetch('/api/v1/chats');
+      if (!response.ok) throw new Error('Failed to fetch chat list');
+      const chatsData = await response.json();
+
+      // Sort chats by created_at date from most recent to oldest
+      chatsData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      this.chats = chatsData.map(chat => ({
+        id: chat.id,
+        name: chat.title,
+        // created_at: chat.created_at
+      }));
+    } catch (error) {
+      console.error('Error fetching chat list:', error.message);
+      // Optionally handle error, e.g., display a message to the user
+    }
+  },
     selectChat(chatId) {
       this.$emit('changeChat', chatId); // Emit the changeChat event with the selected chatId
     },
