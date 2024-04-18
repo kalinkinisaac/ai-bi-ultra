@@ -62,6 +62,16 @@ class SQLGenerator(Component, ABC):
             return matches[0].strip()
         return query
 
+    def format_sql_query_intermediate_steps(self, step: str) -> str:
+        pattern = r"```sql(.*?)```"
+
+        def formatter(match):
+            original_sql = match.group(1)
+            formatted_sql = self.format_sql_query(original_sql)
+            return "```sql\n" + formatted_sql + "\n```"
+
+        return re.sub(pattern, formatter, step, flags=re.DOTALL)
+
     @classmethod
     def get_upper_bound_limit(cls) -> int:
         top_k = os.getenv("UPPER_LIMIT_QUERY_RETURN_ROWS", None)
@@ -99,9 +109,9 @@ class SQLGenerator(Component, ABC):
                     sql_query = self.remove_markdown(action.tool_input)
         if sql_query == "":
             for step in intermediate_steps:
-                action = step[0]
-                if "SELECT" in action.tool_input.upper():
-                    sql_query = self.remove_markdown(action.tool_input)
+                thought = str(step[0].log).split("Action:")[0]
+                if "```sql" in thought:
+                    sql_query = self.remove_markdown(thought)
                     if not sql_query.upper().strip().startswith("SELECT"):
                         sql_query = ""
         return sql_query
@@ -170,12 +180,21 @@ class SQLGenerator(Component, ABC):
                 ):
                     if "actions" in chunk:
                         for message in chunk["messages"]:
-                            queue.put(message.content + "\n")
+                            queue.put(
+                                self.format_sql_query_intermediate_steps(
+                                    message.content
+                                )
+                                + "\n"
+                            )
                     elif "steps" in chunk:
                         for step in chunk["steps"]:
-                            queue.put(f"Observation: `{step.observation}`\n")
+                            queue.put(
+                                f"\n**Observation:**\n {self.format_sql_query_intermediate_steps(step.observation)}\n"
+                            )
                     elif "output" in chunk:
-                        queue.put(f'Final Answer: {chunk["output"]}')
+                        queue.put(
+                            f'\n**Final Answer:**\n {self.format_sql_query_intermediate_steps(chunk["output"])}'
+                        )
                         if "```sql" in chunk["output"]:
                             response.sql = replace_unprocessable_characters(
                                 self.remove_markdown(chunk["output"])
