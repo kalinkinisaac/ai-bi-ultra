@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import HomeView from "../views/HomeView.vue";
+import Home from "../views/Home.vue"
 import DatabaseConnection from "../views/DatabaseConnection.vue";
 import QueryData from "../views/QueryData.vue";
 import Connections from "../views/Connections.vue";
@@ -11,7 +12,7 @@ const routes = [
   {
     path: "/",
     name: "home",
-    component: HomeView,
+    component: Home,
     meta: {
       requiresAuth: true,
     },

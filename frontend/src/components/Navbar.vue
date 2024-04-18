@@ -20,6 +20,11 @@
             <li>
               <router-link class="text-gray-700 hover:text-gray-500 hover:border-b-2 hover:border-gray-500" to="/chat_dev">ChatDev</router-link>
             </li>
+
+            <li>
+              <a class="text-gray-700 hover:text-gray-500 hover:border-b-2 hover:border-gray-500" href="/logout">Logout</a>
+            </li>
+
           </ul>
         </div>
         <!-- Mobile menu button -->
@@ -35,7 +40,16 @@
 
 <script>
 export default {
-  name: 'Navbar-test'
+  name: 'Navbar-test',
+  methods: {
+    logout() {
+      // Implement logout logic here
+      if (confirm("Are you sure you want to log out?")) {
+        console.log(document.execCommand('ClearAuthenticationCache', 'true'));
+        // this.$router.push('/auth/logout');  // Assuming you have a route to handle the logout
+      }
+    }
+  }
 }
 </script>
 

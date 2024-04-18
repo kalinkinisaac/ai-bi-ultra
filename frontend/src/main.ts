@@ -6,7 +6,7 @@ import './output.css';
 import "./assets/main.css";
 import { SuperTokensConfig } from "./config";
 
-SuperTokens.init(SuperTokensConfig);
+// SuperTokens.init(SuperTokensConfig);
 console.log("@!!(@!IBENL@!JEBNL@!JNEKL@!JNEKLJ@!NEKJLN!ASASZZZZ");
 console.log(SuperTokensConfig);
 const app = createApp(App);

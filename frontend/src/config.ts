@@ -8,9 +8,9 @@ export const SuperTokensConfig = {
     websiteDomain: "http://127.0.0.1:80",
   },
   recipeList: [
-    EmailPassword.init({
-      useShadowDom: false,
-    }),
-    Session.init(),
+    // EmailPassword.init({
+    //   useShadowDom: false,
+    // }),
+    // Session.init(),
   ],
 };
