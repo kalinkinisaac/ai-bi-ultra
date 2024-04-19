@@ -222,7 +222,15 @@ class SQLDatabase:
         inspector = inspect(self._engine)
         meta = MetaData(bind=self._engine)
         MetaData.reflect(meta, views=True)
-        rows = inspector.get_table_names() + inspector.get_view_names()
+        schemas = inspector.get_schema_names()
+        rows = []
+        for schema in schemas:
+            if schema in ["information_schema"]:
+                continue
+            schema_tables = inspector.get_table_names(schema=schema) + inspector.get_view_names(schema=schema)
+            full_name_tables = [f"{schema}.{table}" if schema else table for table in schema_tables]
+            rows.extend(full_name_tables)
+        # rows = inspector.get_table_names() + inspector.get_view_names()
         if len(rows) == 0:
             raise EmptyDBError("The db is empty it could be a permission issue")
         return [row.lower() for row in rows]

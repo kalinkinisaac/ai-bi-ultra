@@ -115,12 +115,16 @@ class SqlAlchemyScanner(Scanner):
         self, meta: MetaData, db_engine: SQLDatabase, table: str, rows_number: int = 3
     ) -> List[Any]:
         print(f"Create examples: {table}")
+        if meta.schema:
+            dynamic_meta_table = meta.tables[f"{meta.schema}.{table}"]
+        else:
+            dynamic_meta_table = meta.tables[table]
         examples_query = (
-            sqlalchemy.select(meta.tables[table])
+            sqlalchemy.select(dynamic_meta_table)
             .with_only_columns(
                 [
                     column
-                    for column in meta.tables[table].columns
+                    for column in dynamic_meta_table.columns
                     if column.name.find(".") < 0
                 ]
             )
@@ -144,7 +148,10 @@ class SqlAlchemyScanner(Scanner):
         db_engine: SQLDatabase,
         scanner_service: AbstractScanner,
     ) -> ColumnDetail:
-        dynamic_meta_table = meta.tables[table]
+        if meta.schema:
+            dynamic_meta_table = meta.tables[f"{meta.schema}.{table}"]
+        else:
+            dynamic_meta_table = meta.tables[table]
 
         field_size_query = sqlalchemy.select(
             [dynamic_meta_table.c[column["name"]]]
@@ -203,12 +210,15 @@ class SqlAlchemyScanner(Scanner):
             )
             for col in valid_columns
         ]
-
+        if meta.schema:
+            original_table_name = f"{meta.schema}.{table}"
+        else:
+            original_table_name = table
         if "clickhouse" not in str(db_engine.engine.url).split(":")[0]:
-            new_table = Table(original_table.name, MetaData(), *new_columns)
+            new_table = Table(original_table_name, MetaData(), *new_columns)
         else:
             new_table = Table(
-                original_table.name, MetaData(), *new_columns, engines.MergeTree()
+                original_table_name, MetaData(), *new_columns, engines.MergeTree()
             )
 
         foreign_key_constraints = []
@@ -236,10 +246,15 @@ class SqlAlchemyScanner(Scanner):
         repository: TableDescriptionRepository,
         scanner_service: AbstractScanner,
     ) -> TableDescription:
-        print(f"Scanning table: {table}")
+        print(f"Scanning table: {meta.schema}.{table}")
         inspector = inspect(db_engine.engine)
         table_columns = []
-        columns = inspector.get_columns(table_name=table)
+        # schema = None
+        # if "." in table:
+        #     schema, table_name = table.split(".")
+        # else:
+        #     table_name = table
+        columns = inspector.get_columns(table_name=table, schema=meta.schema)
         columns = [column for column in columns if column["name"].find(".") < 0]
 
         for column in columns:
@@ -256,7 +271,7 @@ class SqlAlchemyScanner(Scanner):
 
         object = TableDescription(
             db_connection_id=db_connection_id,
-            table_name=table,
+            table_name=f"{meta.schema}.{table}",
             columns=table_columns,
             table_schema=self.get_table_schema(
                 meta=meta, db_engine=db_engine, table=table
@@ -294,9 +309,17 @@ class SqlAlchemyScanner(Scanner):
             scanner_service = services[db_engine.engine.dialect.name]()
 
         inspector = inspect(db_engine.engine)
-        meta = MetaData(bind=db_engine.engine)
-        MetaData.reflect(meta, views=True)
-        tables = inspector.get_table_names() + inspector.get_view_names()
+        # meta = MetaData(bind=db_engine.engine)
+        # MetaData.reflect(meta, views=True)
+        # tables = inspector.get_table_names() + inspector.get_view_names()
+        schemas = inspector.get_schema_names()
+        tables = []
+        for schema in schemas:
+            if schema in ["information_schema"]:
+                continue
+            schema_tables = inspector.get_table_names(schema=schema) + inspector.get_view_names(schema=schema)
+            full_name_tables = [f"{schema}.{table}" if schema else table for table in schema_tables]
+            tables.extend(full_name_tables)
         if table_names:
             table_names = [table.lower() for table in table_names]
             tables = [
@@ -306,10 +329,17 @@ class SqlAlchemyScanner(Scanner):
             raise ValueError("No table found")
 
         for table in tables:
+            schema = None
+            if "." in table:
+                schema, table_name = table.split(".")
+            else:
+                table_name = table
+            schema_meta = MetaData(bind=db_engine.engine, schema=schema)
+            MetaData.reflect(schema_meta, views=True)
             try:
                 self.scan_single_table(
-                    meta=meta,
-                    table=table,
+                    meta=schema_meta,
+                    table=table_name,
                     db_engine=db_engine,
                     db_connection_id=db_connection_id,
                     repository=repository,
