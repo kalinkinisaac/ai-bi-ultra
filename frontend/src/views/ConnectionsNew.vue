@@ -40,9 +40,6 @@
 import axios from 'axios';
 import ConnectionItem from '../components/connections/ConnectionItem.vue';
 import EditModal from '../components/connections/EditModal.vue';
-import 'usemodal-vue3'
-import { Modal } from 'usemodal-vue3';
-console.log(Modal);
 export default {
   name: 'DatabaseConnectionsList',
   components: { ConnectionItem, EditModal },
