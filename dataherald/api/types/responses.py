@@ -95,6 +95,12 @@ class TableDescriptionResponse(BaseResponse, TableDescription):
     id: str | None
 
 
+class DatabaseTableResponse(BaseModel):
+    db_connection_id: str
+    db_connection_alias: str
+    tables: list[TableDescription]
+
+
 class GoldenSQLResponse(BaseResponse, GoldenSQL):
     pass
 

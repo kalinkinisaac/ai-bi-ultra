@@ -4,6 +4,7 @@ import Home from "../views/Home.vue"
 import DatabaseConnection from "../views/DatabaseConnection.vue";
 import QueryData from "../views/QueryData.vue";
 import Connections from "../views/Connections.vue";
+import ConnectionsNew from "../views/ConnectionsNew.vue";
 import ChatDialog from "../views/ChatDialog.vue";
 import ChatDev from "../components/ChatWindowDev.vue";
 import Session from 'supertokens-auth-react/recipe/session';
@@ -29,6 +30,14 @@ const routes = [
     path: "/connections",
     name: "connections",
     component: Connections,
+    meta: {
+      requiresAuth: true,
+    },
+  },
+      {
+    path: "/connections_new",
+    name: "connections_new",
+    component: ConnectionsNew,
     meta: {
       requiresAuth: true,
     },

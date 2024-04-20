@@ -24,7 +24,7 @@ from dataherald.api.types.responses import (
     PromptResponse,
     SQLGenerationResponse,
     TableDescriptionResponse,
-    ChatResponse, ChatMessageResponse,
+    ChatResponse, ChatMessageResponse, DatabaseTableResponse,
 )
 from dataherald.config import Component
 from dataherald.db_scanner.models.types import QueryHistory
@@ -70,6 +70,10 @@ class API(Component, ABC):
 
     @abstractmethod
     def list_database_connections(self) -> list[DatabaseConnection]:
+        pass
+
+    @abstractmethod
+    def list_database_tables(self) -> list[DatabaseTableResponse]:
         pass
 
     @abstractmethod

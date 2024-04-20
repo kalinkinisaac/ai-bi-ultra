@@ -35,7 +35,7 @@ from dataherald.api.types.responses import (
     PromptResponse,
     SQLGenerationResponse,
     TableDescriptionResponse,
-    ChatResponse, ChatMessageResponse,
+    ChatResponse, ChatMessageResponse, DatabaseTableResponse,
 )
 from dataherald.config import System
 from dataherald.context_store import ContextStore
@@ -266,6 +266,29 @@ class FastAPI(API):
             DatabaseConnectionResponse(**db_connection.dict())
             for db_connection in db_connections
         ]
+
+    @override
+    def list_database_tables(self) -> list[DatabaseTableResponse]:
+        db_connection_repository = DatabaseConnectionRepository(self.storage)
+        db_connections = db_connection_repository.find_all()
+        response = []
+        for db_connection in db_connections:
+            if db_connection.alias == "golden":
+                print(1)
+            scanner_repository = TableDescriptionRepository(self.storage)
+            # scanner = self.system.instance(Scanner)
+            tables = scanner_repository.find_by({"db_connection_id": db_connection.id})
+            # sql_database = SQLDatabase.get_sql_engine(db_connection, True)
+            # tables = sql_database.get_tables_and_views()
+            response.append(
+                DatabaseTableResponse(
+                    db_connection_id=db_connection.id,
+                    db_connection_alias=db_connection.alias,
+                    tables=tables,
+                )
+            )
+        return response
+
 
     @override
     def list_chats(self) -> list[ChatResponse]:

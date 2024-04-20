@@ -26,7 +26,7 @@ from dataherald.api.types.responses import (
     NLGenerationResponse,
     PromptResponse,
     SQLGenerationResponse,
-    TableDescriptionResponse, ChatResponse, ChatMessageResponse,
+    TableDescriptionResponse, ChatResponse, ChatMessageResponse, DatabaseTableResponse,
 )
 from dataherald.config import Settings
 from dataherald.db_scanner.models.types import QueryHistory
@@ -78,6 +78,13 @@ class FastAPI(dataherald.server.Server):
         self.router.add_api_route(
             "/api/v1/database-connections",
             self.list_database_connections,
+            methods=["GET"],
+            tags=["Database connections"],
+        )
+
+        self.router.add_api_route(
+            "/api/v1/table-descriptions/database/list",
+            self.list_database_tables,
             methods=["GET"],
             tags=["Database connections"],
         )
@@ -535,6 +542,10 @@ class FastAPI(dataherald.server.Server):
     def list_database_connections(self) -> list[DatabaseConnection]:
         """List all database connections"""
         return self._api.list_database_connections()
+
+    def list_database_tables(self) -> list[DatabaseTableResponse]:
+        """List all database connections"""
+        return self._api.list_database_tables()
 
     def list_chats(self) -> list[ChatResponse]:
         """List all chats"""

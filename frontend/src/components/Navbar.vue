@@ -12,6 +12,9 @@
               <router-link class="text-gray-700 hover:text-gray-500 hover:border-b-2 hover:border-gray-500" to="/connections">Connections</router-link>
             </li>
             <li>
+              <router-link class="text-gray-700 hover:text-gray-500 hover:border-b-2 hover:border-gray-500" to="/connections_new">Connections New</router-link>
+            </li>
+            <li>
               <router-link class="text-gray-700 hover:text-gray-500 hover:border-b-2 hover:border-gray-500" to="/query">Query Data</router-link>
             </li>
             <li>
@@ -53,7 +56,7 @@ export default {
 }
 </script>
 
-<style scoped>
-@import url("../input.css");
-/* Custom styles can still go here if needed */
-</style>
+<!--<style scoped>-->
+<!--@import url("../input.css");-->
+<!--/* Custom styles can still go here if needed */-->
+<!--</style>-->

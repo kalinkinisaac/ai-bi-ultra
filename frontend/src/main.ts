@@ -1,13 +1,12 @@
 import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";
-import SuperTokens from "supertokens-auth-react";
 import './output.css';
 import "./assets/main.css";
 import { SuperTokensConfig } from "./config";
+import '../node_modules/flowbite-vue/dist/index.css'
 
 // SuperTokens.init(SuperTokensConfig);
-console.log("@!!(@!IBENL@!JEBNL@!JNEKL@!JNEKLJ@!NEKJLN!ASASZZZZ");
 console.log(SuperTokensConfig);
 const app = createApp(App);
 
