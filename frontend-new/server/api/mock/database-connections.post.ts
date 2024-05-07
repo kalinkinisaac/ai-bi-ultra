@@ -1,13 +1,5 @@
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
-  // body
-  // {
-  //   "alias": "NOVOE",
-  //   "use_ssh": false,
-  //   "connection_uri": "postgresql+psycopg2://huqkkkus:EG8CnuZlRIC2XCNY5ouJLCqjB6tFiFGf@balarama.db.elephantsql.com/huqkkkus",
-  //   "llm_api_key": "",
-  //   "ssh_settings": {}
-  // }
 
   return {
     "id": "6602d5d772e270a8c60aa549",
