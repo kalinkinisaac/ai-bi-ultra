@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class=" bg-blue-900">
     <div class="text-xl font-semibold mb-2">
       Файнтюнинххх
     </div>

@@ -1,13 +1,33 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
+  ssr: false,
+  runtimeConfig: {
+    public: {
+      // apiUrl: 'http://localhost:80',
+    },
+  },
+  // routeRules: {
+  //   '/api/v1/**': {
+  //     cors: true,
+  //     headers: {
+  //       'access-control-allow-methods': 'GET',
+  //     },
+  //     proxy: 'http://localhost:80/api/v1/**',
+  //   },
+  // },
   modules: [
     '@nuxt/eslint',
     '@nuxtjs/tailwindcss',
     'shadcn-nuxt',
+    '@pinia/nuxt',
     '@nuxtjs/color-mode',
     'nuxt-lucide-icons',
+    'nuxt-shiki',
   ],
+  // routeRules: {
+  //   '/api/**': { proxy: '/api/v2/**' },
+  // },
   eslint: {
     config: {
       stylistic: true,
@@ -22,5 +42,11 @@ export default defineNuxtConfig({
   },
   lucide: {
     namePrefix: 'Icon',
+  },
+  shiki: {
+    defaultLang: 'sql',
+    highlightOptions: {
+      lang: 'sql'
+    }
   },
 })

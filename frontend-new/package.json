@@ -11,26 +11,33 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@formkit/tempo": "^0.0.19",
+    "@pinia/nuxt": "^0.5.1",
+    "@vee-validate/zod": "^4.12.6",
     "@vueuse/core": "^10.9.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "lucide-vue-next": "^0.357.0",
-    "nuxt": "^3.10.3",
+    "pinia": "^2.1.7",
     "radix-vue": "^1.5.2",
     "tailwind-merge": "^2.2.2",
     "tailwindcss-animate": "^1.0.7",
+    "vee-validate": "^4.12.6",
     "vue": "^3.4.21",
-    "vue-router": "^4.3.0"
+    "vue-router": "^4.3.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@nuxt/eslint": "^0.3.0-beta.3",
+    "@nuxt/eslint": "^0.3.0-beta.4",
     "@nuxtjs/color-mode": "^3.3.2",
     "@nuxtjs/tailwindcss": "^6.11.4",
     "eslint": "^8.57.0",
     "eslint-plugin-perfectionist": "^2.7.0",
+    "nuxt": "^3.11.1",
     "nuxt-lucide-icons": "^1.0.4",
+    "nuxt-shiki": "^0.3.0",
     "prettier": "^3.2.5",
     "shadcn-nuxt": "^0.10.0",
-    "typescript": "^5.4.2"
+    "typescript": "^5.4.3"
   }
 }
