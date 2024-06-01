@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --loglevel verbose
 
-RUN npm run build
+#RUN npm run build
 
 COPY . .
 
@@ -16,4 +16,5 @@ COPY . .
 # EXPOSE 3000
 
 CMD ["npm", "run", "dev"]
+#CMD ["tail", "-f", "/dev/null"]
 # ENTRYPOINT ["node", ".output/server/index.mjs"]
