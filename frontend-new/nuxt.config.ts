@@ -1,7 +1,10 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
-  ssr: false,
+  // ssr: false,
+  devServer: {
+    port: 8081
+  },
   runtimeConfig: {
     public: {
       // apiUrl: 'http://localhost:80',
