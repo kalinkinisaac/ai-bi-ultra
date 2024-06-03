@@ -18,3 +18,20 @@ export interface DatabaseConnectionsResponse {
   metadata: null
   created_at: string
 }
+
+export interface DatabaseConnectionsResponseError {
+  error_code: string
+  message: string
+  description: string
+  detail: DatabaseConnectionsDetail
+}
+
+interface DatabaseConnectionsDetail {
+  alias: string
+  use_ssh: boolean
+  connection_uri: string
+  path_to_credentials_file: any
+  llm_api_key: any
+  ssh_settings: any
+  file_storage: any
+}

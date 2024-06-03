@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { DatabaseConnectionsResponse, DatabaseConnectionsResponseError } from '@/types/db'
+
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import * as z from 'zod'
@@ -48,45 +50,41 @@ const dbTypes = {
   },
 }
 
-const formSchema = toTypedSchema(
-  z.object({
-    // id: z.string(),
-    alias: z.string(),
-    connection_uri: z.string().min(1, 'Введите адрес подключения к БД'),
-    connection: z.object({
-      db_type: z.string({
-        required_error: 'Выберите тип БД',
-      }),
-      user: z.string().min(1),
-      password: z.string().min(1),
-      host: z.string().min(1),
-      // port: z.string(),
-      db_name: z.string().min(1),
-    }).nullable(),
-    // llm_api_key: z.string(),
-    // use_ssh: z.boolean(),
-    // ssh_settings: z.object({
-    //   host: z.string().nullable(),
-    //   username: z.string().nullable(),
-    //   password: z.string(),
-    //   port: z.number(),
-    //   private_key_password: z.string(),
-    // }).nullable(),
-    // path_to_credentials_file: z.string().nullable(),
-    // file_storage: z.string().nullable(),
-    // metadata: z.string().nullable(),
-    // created_at: z.string().datetime({ offset: true }),
-  }),
-)
+const formSchema =
+  z.discriminatedUnion("connection_type", [
+    z.object({
+      connection_type: z.literal('uri'),
+      alias: z.string(),
+      connection_uri: z.string().min(1, 'Введите адрес подключения к БД'),
+    }),
+    z.object({
+      connection_type: z.literal('basic'),
+      alias: z.string(),
+      connection: z.object({
+        db_type: z.string({
+          required_error: 'Выберите тип БД',
+        }),
+        user: z.string().min(1),
+        password: z.string().min(1),
+        host: z.string().min(1),
+        // port: z.string(),
+        db_name: z.string().min(1),
+      })
+    })
+  ])
+
+type formSchemaType = z.infer<typeof formSchema>
+type ConnectionType = Pick<formSchemaType, 'connection_type'>['connection_type'];
+const currentTab: Ref<ConnectionType> = ref('basic')
 
 const form = useForm({
-  validationSchema: formSchema,
+  validationSchema: toTypedSchema(formSchema),
 })
 
 const errorTypes = {
   invalid_database_connection: 'Не удалось подключиться к базе данных, используя указанные доступы',
 }
-const error = ref<keyof typeof errorTypes | null>('invalid_database_connection')
+const error = ref<keyof typeof errorTypes | null>(null)
 
 const generatedUri = computed(() => {
   const { values } = form
@@ -106,52 +104,42 @@ const generatedUri = computed(() => {
 
 const onSubmit = async () => {
   console.log('onSubmit!')
-  // Чистим старую ошибку от сервера
-  error.value = null
 
-  if (form.values.connection) {
-    form.setFieldValue('connection_uri', generatedUri.value)
-    // errors.connection_uri = 'hui'
-  }
-  else {
-    // form.setValues('connection', {})
-    form.resetField('connection')
-  }
-  // console.log('vals!', form.values)
+  form.setFieldValue('connection_type', currentTab.value)
 
   const { valid, errors } = await form.validate()
   console.log('isValid!', valid, errors)
   if (valid) {
     console.log('isValid! sent to API')
 
-    if (form.values.connection) {
-      form.values.connection_uri = generatedUri.value
-    }
-
     isPending.value = true
     console.log('sent start load', form.values)
 
-    const { connection, ...neededValues } = form.values
+    const neededValues = formSchema.parse(form.values)
 
-    const res = $fetch('/api/v1/database-connections', {
+    const res = $fetch<DatabaseConnectionsResponse[] | DatabaseConnectionsResponseError>('/api/v1/database-connections', {
       method: 'POST',
-      body: neededValues,
+      body: {
+        alias: neededValues.alias,
+        connection_uri: neededValues.connection_type === 'basic' ? generatedUri.value : neededValues.connection_uri
+      },
+      async onRequestError({ request, options, error }) {
+        // Log error
+        console.log("[fetch request error]", request, options, error);
+      },
+      ignoreResponseError: true
     })
       .then(data => {
+        if ('error_code' in data) throw new Error(data.error_code)
         toast({
           title: `База данных "${form.values.alias}" успешно добавлена`,
           description: 'Перейдите в чат, чтобы ее использовать',
         })
         emit('success')
-        // new Promise((resolve, reject) => {
-        //   setTimeout(() => {
-        //     reject(data)
-        //   }, 3000)
-        // })
       })
-      .catch((reason) => {
-        console.error('error', reason)
-        error.value = reason
+      .catch((err) => {
+        console.warn(err)
+        error.value = err.message
       })
       .finally(() => {
         console.log('finally')
@@ -174,20 +162,6 @@ const onSubmit = async () => {
         </DialogDescription>
       </DialogHeader>
 
-      <Button
-        @click="() => {
-          toast({
-            title: 'Scheduled: Catch up',
-            description: 'Friday, February 10, 2023 at 5:57 PM',
-          });
-          console.log(11)
-        }"
-      >
-        Add to calendar
-      </Button>
-      <Toaster />
-
-
       <FormField
         v-slot="{ componentField }"
         name="alias"
@@ -208,6 +182,7 @@ const onSubmit = async () => {
       <Tabs
         default-value="basic"
         class="mt-2"
+        v-model="currentTab"
       >
         <TabsList>
           <TabsTrigger value="basic">
@@ -344,7 +319,7 @@ const onSubmit = async () => {
               <FormControl>
                 <Input
                   type="text"
-                  placeholder="Название таблицы"
+                  placeholder="Название базы"
                   v-bind="componentField"
                 />
               </FormControl>

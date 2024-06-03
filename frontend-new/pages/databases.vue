@@ -10,8 +10,10 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 
+import { type DatabaseConnectionsResponse } from '@/types/db'
+
 // const { data, pending, error, refresh } = await useFetch('http://localhost:80/api/v1/database-connections')
-const { data, refresh } = await useFetch('/api/v1/database-connections')
+const { data, refresh } = await useFetch<DatabaseConnectionsResponse[]>('/api/v1/database-connections')
 // const { data, refresh } = await useFetch('/api/mock/database-connections')
 
 const isModalCreateOpen = ref(false)
