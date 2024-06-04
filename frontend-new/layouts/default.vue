@@ -1,26 +1,26 @@
 <script setup lang="ts">
 // import { ScrollArea } from '@/components/ui/scroll-area'
 
-import { Toaster } from '@/components/ui/toast'
+import { Toaster } from "@/components/ui/toast";
 
 // TOOD: Вынести в useUiStore()
-const isMenuOpen = ref(false)
-const toggleMenu = () => isMenuOpen.value = !isMenuOpen.value
+const isMenuOpen = ref(false);
+const toggleMenu = () => (isMenuOpen.value = !isMenuOpen.value);
 
-const colorMode = useColorMode()
+const colorMode = useColorMode();
 const changeTheme = () => {
   switch (colorMode.preference) {
-    case 'system':
-      colorMode.preference = 'dark'
-      break
-    case 'dark':
-      colorMode.preference = 'light'
-      break
-    case 'light':
-      colorMode.preference = 'system'
-      break
+    case "system":
+      colorMode.preference = "dark";
+      break;
+    case "dark":
+      colorMode.preference = "light";
+      break;
+    case "light":
+      colorMode.preference = "system";
+      break;
   }
-}
+};
 </script>
 
 <template>

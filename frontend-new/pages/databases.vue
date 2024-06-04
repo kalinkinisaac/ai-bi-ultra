@@ -1,26 +1,19 @@
 <script setup lang="ts">
-import { format, parse } from '@formkit/tempo'
+import { format, parse } from "@formkit/tempo";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { type DatabaseConnectionsResponse } from '@/types/db'
+import { type DatabaseConnectionsResponse } from "@/types/db";
 
 // const { data, pending, error, refresh } = await useFetch('http://localhost:80/api/v1/database-connections')
-const { data, refresh } = await useFetch<DatabaseConnectionsResponse[]>('/api/v1/database-connections')
+const { data, refresh } = await useFetch<DatabaseConnectionsResponse[]>("/api/v1/database-connections");
 // const { data, refresh } = await useFetch('/api/mock/database-connections')
 
-const isModalCreateOpen = ref(false)
+const isModalCreateOpen = ref(false);
 const onCreate = () => {
-  isModalCreateOpen.value = true
-  console.log('onCreate')
-}
+  isModalCreateOpen.value = true;
+  console.log("onCreate");
+};
 </script>
 
 <template>
