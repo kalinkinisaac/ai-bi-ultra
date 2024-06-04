@@ -1,4 +1,6 @@
+// TODO: Импортировать все дочерние типы наружу
 // import * as dbTypes from './db'
+// export { dbTypes }
 
 export enum EChatRespondent {
   user = 'user',
@@ -14,4 +16,3 @@ export interface ChatResponse {
   sql?: string // TODO: Только для теста, убрать (!)
 }
 
-// export { dbTypes }
