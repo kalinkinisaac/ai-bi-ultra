@@ -1103,3 +1103,20 @@ class FastAPI(API):
             yield json.dumps(
                 stream_error_response(e, request.dict(), "nl_generation_not_created")
             )
+
+    @override
+    async def fake_stream_sql_generation_new(
+        self,
+        text,
+        connection_id
+    ):
+        try:
+            for i in range(100):
+                # yield f"{i}"
+                yield "data: {}\n\n".format(json.dumps({text: connection_id}))
+                # queue.task_done()
+                await asyncio.sleep(0.25)
+        except Exception as e:
+            yield json.dumps(
+                stream_error_response(e, request.dict(), "nl_generation_not_created")
+            )

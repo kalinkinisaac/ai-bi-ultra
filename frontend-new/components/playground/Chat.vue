@@ -71,23 +71,12 @@ const onSubmit = async () => {
   emit("submit");
 
   const subscribeToThoughts = async () => {
+
     console.log(query.value, connection.value);
-    const res = await $fetch("/api/v1/fake-stream-sql-generation", {
-      method: "POST",
-      body: {
-        prompt: {
-          text: query.value,
-          db_connection_id: connection.value,
-          metadata: {},
-        },
-      },
-    });
+    const eventSource = new EventSource('/api/v2/fake-stream-sql-generation?text=' + query.value + '&connection_id=' + connection.value, {withCredentials: true});
 
-    console.log(res);
-
-    // TODO: Change check?
-    if (res?.length) {
-      // trigger refresh chats (store)
+    eventSource.onmessage = (event) => {
+      console.log(event.data)
     }
   };
 
