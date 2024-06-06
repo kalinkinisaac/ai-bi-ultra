@@ -415,6 +415,13 @@ class FastAPI(dataherald.server.Server):
             "/api/v1/test", self.test, methods=["POST"], tags=["NL Generation"],
         )
 
+        self.router.add_api_route(
+            "/api/v2/fake-stream-sql-generation",
+            self.fake_stream_sql_generation_new,
+            methods=["GET"],
+            tags=["Fake Stream SQL Generation"],
+        )
+
         self._app.include_router(self.router)
         use_route_names_as_operation_ids(self._app)
 
@@ -708,3 +715,11 @@ class FastAPI(dataherald.server.Server):
             self._api.fake_stream_sql_generation(request),
             media_type="text/event-stream",
         )
+
+    async def fake_stream_sql_generation_new(
+            self, text, connection_id
+        ) -> StreamingResponse:
+            return StreamingResponse(
+                self._api.fake_stream_sql_generation_new(text, connection_id),
+                media_type="text/event-stream",
+            )
