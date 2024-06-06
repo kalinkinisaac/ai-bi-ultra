@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { DatabaseConnectionsResponse, DatabaseConnectionsResponseError } from '@/types/db'
+import type { DatabaseConnectionsResponse, DatabaseConnectionsResponseError } from "@/types/db";
 
-import { useForm } from 'vee-validate'
-import { toTypedSchema } from '@vee-validate/zod'
-import * as z from 'zod'
+import { useForm } from "vee-validate";
+import { toTypedSchema } from "@vee-validate/zod";
+import * as z from "zod";
 
 // import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
@@ -13,141 +13,138 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { useToast } from '@/components/ui/toast/use-toast'
+import { useToast } from "@/components/ui/toast/use-toast";
 
 // TODO: test toast
-const { toast } = useToast()
+const { toast } = useToast();
 
-const model = defineModel<boolean>()
+const model = defineModel<boolean>();
 const emit = defineEmits<{
-  success: []
-}>()
+  success: [];
+}>();
 
-const isPasswordShown = ref(false)
-const isPending = ref(false)
+const isPasswordShown = ref(false);
+const isPending = ref(false);
 const dbTypes = {
   postgres: {
-    name: 'Postgres',
-    protocol: 'postgresql+psycopg2://',
+    name: "Postgres",
+    protocol: "postgresql+psycopg2://",
   },
   mysql: {
-    name: 'MySQL / MariaDB',
-    protocol: 'mysql+pymysql://',
+    name: "MySQL / MariaDB",
+    protocol: "mysql+pymysql://",
   },
   mssql: {
-    name: 'MSSQL Server',
-    protocol: 'mssql+pymssql://',
+    name: "MSSQL Server",
+    protocol: "mssql+pymssql://",
   },
-}
+};
 
-const formSchema =
-  z.discriminatedUnion("connection_type", [
-    z.object({
-      connection_type: z.literal('uri'),
-      alias: z.string(),
-      connection_uri: z.string().min(1, 'Введите адрес подключения к БД'),
+const formSchema = z.discriminatedUnion("connection_type", [
+  z.object({
+    connection_type: z.literal("uri"),
+    alias: z.string(),
+    connection_uri: z.string().min(1, "Введите адрес подключения к БД"),
+  }),
+  z.object({
+    connection_type: z.literal("basic"),
+    alias: z.string(),
+    connection: z.object({
+      db_type: z.string({
+        required_error: "Выберите тип БД",
+      }),
+      user: z.string().min(1),
+      password: z.string().min(1),
+      host: z.string().min(1),
+      // port: z.string(),
+      db_name: z.string().min(1),
     }),
-    z.object({
-      connection_type: z.literal('basic'),
-      alias: z.string(),
-      connection: z.object({
-        db_type: z.string({
-          required_error: 'Выберите тип БД',
-        }),
-        user: z.string().min(1),
-        password: z.string().min(1),
-        host: z.string().min(1),
-        // port: z.string(),
-        db_name: z.string().min(1),
-      })
-    })
-  ])
+  }),
+]);
 
-type formSchemaType = z.infer<typeof formSchema>
-type ConnectionType = Pick<formSchemaType, 'connection_type'>['connection_type'];
-const currentTab: Ref<ConnectionType> = ref('basic')
+type formSchemaType = z.infer<typeof formSchema>;
+type ConnectionType = Pick<formSchemaType, "connection_type">["connection_type"];
+const currentTab: Ref<ConnectionType> = ref("basic");
 
 const form = useForm({
   validationSchema: toTypedSchema(formSchema),
-})
+});
 
 const errorTypes = {
-  invalid_database_connection: 'Не удалось подключиться к базе данных, используя указанные доступы',
-}
-const error = ref<keyof typeof errorTypes | null>(null)
+  invalid_database_connection: "Не удалось подключиться к базе данных, используя указанные доступы",
+};
+const error = ref<keyof typeof errorTypes | null>(null);
 
 const generatedUri = computed(() => {
-  const { values } = form
-  let uri = ''
+  const { values } = form;
+  let uri = "";
   switch (values.connection?.db_type) {
-    case 'postgres':
-    case 'mysql':
-      uri += `${dbTypes[values.connection?.db_type].protocol}${values.connection?.user}:${values.connection?.password}@${values.connection?.host}${values.connection?.port ? `:${values.connection?.port}` : ''}/${values.connection?.db_name}`
-      break
-    case 'mssql':
-      uri += `${dbTypes[values.connection?.db_type].protocol}${values.connection?.user}:${values.connection?.password}@${values.connection?.host}${values.connection?.port ? `:${values.connection?.port}` : ''}/${values.connection?.db_name}`
-      break
-    default: break
+    case "postgres":
+    case "mysql":
+      uri += `${dbTypes[values.connection?.db_type].protocol}${values.connection?.user}:${values.connection?.password}@${values.connection?.host}${values.connection?.port ? `:${values.connection?.port}` : ""}/${values.connection?.db_name}`;
+      break;
+    case "mssql":
+      uri += `${dbTypes[values.connection?.db_type].protocol}${values.connection?.user}:${values.connection?.password}@${values.connection?.host}${values.connection?.port ? `:${values.connection?.port}` : ""}/${values.connection?.db_name}`;
+      break;
+    default:
+      break;
   }
-  return uri
-})
+  return uri;
+});
 
 const onSubmit = async () => {
-  console.log('onSubmit!')
+  console.log("onSubmit!");
 
-  form.setFieldValue('connection_type', currentTab.value)
+  form.setFieldValue("connection_type", currentTab.value);
 
-  const { valid, errors } = await form.validate()
-  console.log('isValid!', valid, errors)
+  const { valid, errors } = await form.validate();
+  console.log("isValid!", valid, errors);
   if (valid) {
-    console.log('isValid! sent to API')
+    console.log("isValid! sent to API");
 
-    isPending.value = true
-    console.log('sent start load', form.values)
+    isPending.value = true;
+    console.log("sent start load", form.values);
 
-    const neededValues = formSchema.parse(form.values)
+    const neededValues = formSchema.parse(form.values);
 
-    const res = $fetch<DatabaseConnectionsResponse[] | DatabaseConnectionsResponseError>('/api/v1/database-connections', {
-      method: 'POST',
-      body: {
-        alias: neededValues.alias,
-        connection_uri: neededValues.connection_type === 'basic' ? generatedUri.value : neededValues.connection_uri
+    const res = $fetch<DatabaseConnectionsResponse[] | DatabaseConnectionsResponseError>(
+      "/api/v1/database-connections",
+      {
+        method: "POST",
+        body: {
+          alias: neededValues.alias,
+          connection_uri: neededValues.connection_type === "basic" ? generatedUri.value : neededValues.connection_uri,
+        },
+        async onRequestError({ request, options, error }) {
+          // Log error
+          console.log("[fetch request error]", request, options, error);
+        },
+        ignoreResponseError: true,
       },
-      async onRequestError({ request, options, error }) {
-        // Log error
-        console.log("[fetch request error]", request, options, error);
-      },
-      ignoreResponseError: true
-    })
-      .then(data => {
-        if ('error_code' in data) throw new Error(data.error_code)
+    )
+      .then((data) => {
+        if ("error_code" in data) throw new Error(data.error_code);
         toast({
           title: `База данных "${form.values.alias}" успешно добавлена`,
-          description: 'Перейдите в чат, чтобы ее использовать',
-        })
-        emit('success')
+          description: "Перейдите в чат, чтобы ее использовать",
+        });
+        emit("success");
       })
       .catch((err) => {
-        console.warn(err)
-        error.value = err.message
+        console.warn(err);
+        error.value = err.message;
       })
       .finally(() => {
-        console.log('finally')
-        isPending.value = false
-      })
-    console.log('res create', res)
+        console.log("finally");
+        isPending.value = false;
+      });
+    console.log("res create", res);
   }
-}
+};
 </script>
 
 <template>

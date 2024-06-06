@@ -1,9 +1,9 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
-  ssr: false,
+  ssr: true,
   devServer: {
-    port: 8081
+    port: 8081,
   },
   runtimeConfig: {
     public: {
@@ -20,13 +20,13 @@ export default defineNuxtConfig({
   //   },
   // },
   modules: [
-    '@nuxt/eslint',
-    '@nuxtjs/tailwindcss',
-    'shadcn-nuxt',
-    '@pinia/nuxt',
-    '@nuxtjs/color-mode',
-    'nuxt-lucide-icons',
-    'nuxt-shiki',
+    "@nuxt/eslint",
+    "@nuxtjs/tailwindcss",
+    "shadcn-nuxt",
+    "@pinia/nuxt",
+    "@nuxtjs/color-mode",
+    "nuxt-lucide-icons",
+    "nuxt-shiki",
   ],
   // routeRules: {
   //   '/api/**': { proxy: '/api/v2/**' },
@@ -37,19 +37,19 @@ export default defineNuxtConfig({
     },
   },
   shadcn: {
-    prefix: '',
-    componentDir: './components/ui',
+    prefix: "",
+    componentDir: "./components/ui",
   },
   colorMode: {
-    classSuffix: '',
+    classSuffix: "",
   },
   lucide: {
-    namePrefix: 'Icon',
+    namePrefix: "Icon",
   },
   shiki: {
-    defaultLang: 'sql',
+    defaultLang: "sql",
     highlightOptions: {
-      lang: 'sql'
-    }
+      lang: "sql",
+    },
   },
-})
+});

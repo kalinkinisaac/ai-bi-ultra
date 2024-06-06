@@ -1,13 +1,12 @@
-import withNuxt from './.nuxt/eslint.config.mjs'
-import perfectionist from 'eslint-plugin-perfectionist'
+import withNuxt from "./.nuxt/eslint.config.mjs";
+import perfectionist from "eslint-plugin-perfectionist";
 
-export default withNuxt(
-  {
-    plugins: {
-      perfectionist,
-    },
-    rules: {
-      // Default
-      // ...
-    },
-  })
+export default withNuxt({
+  plugins: {
+    perfectionist,
+  },
+  rules: {
+    // Default
+    // ...
+  },
+});

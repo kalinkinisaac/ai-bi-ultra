@@ -3,16 +3,15 @@
 // export { dbTypes }
 
 export enum EChatRespondent {
-  user = 'user',
-  assistant = 'assistant',
+  user = "user",
+  assistant = "assistant",
 }
 
 export interface ChatResponse {
-  id: string
-  chat_id: string
-  content: string
-  role: keyof typeof EChatRespondent
-  created_at: string
-  sql?: string // TODO: Только для теста, убрать (!)
+  id: string;
+  chat_id: string;
+  content: string;
+  role: keyof typeof EChatRespondent;
+  created_at: string;
+  sql?: string; // TODO: Только для теста, убрать (!)
 }
-

@@ -1,26 +1,28 @@
 <script setup lang="ts">
-import type { ChatResponse } from '@/types'
-import { EChatRespondent } from '@/types'
+import type { ChatResponse } from "@/types";
+import { EChatRespondent } from "@/types";
 
+import { format } from "@formkit/tempo";
 
-import { format } from '@formkit/tempo'
+import { useForm } from "vee-validate";
+import { toTypedSchema } from "@vee-validate/zod";
+import * as z from "zod";
 
-import { useForm } from 'vee-validate'
-import { toTypedSchema } from '@vee-validate/zod'
-import * as z from 'zod'
+import { type DatabaseConnectionsResponse } from "@/types/db";
 
-import { type DatabaseConnectionsResponse } from '@/types/db'
-
-withDefaults(defineProps<{
-  messages: ChatResponse[] | null
-}>(), {
-  messages: null,
-})
+withDefaults(
+  defineProps<{
+    messages: ChatResponse[] | null;
+  }>(),
+  {
+    messages: null,
+  },
+);
 const emit = defineEmits<{
-  submit: []
-}>()
-const query = defineModel<string>('query')
-const connection = defineModel<string>('connection')
+  submit: [];
+}>();
+const query = defineModel<string>("query");
+const connection = defineModel<string>("connection");
 
 // Form
 const formSchema = toTypedSchema(
@@ -28,57 +30,69 @@ const formSchema = toTypedSchema(
     query: z.string().min(1),
     connection: z.string().min(1),
   }),
-)
+);
 
 const form = useForm({
   validationSchema: formSchema,
-})
+});
 
 // Settings
-const { data } = await useFetch<DatabaseConnectionsResponse[]>('/api/v1/database-connections')
+const { data } = await useFetch<DatabaseConnectionsResponse[]>("/api/v1/database-connections");
 if (data.value?.length) {
-  connection.value = data.value[0].id
+  connection.value = data.value[0].id;
 }
-const isSyncPending = ref(false)
+const isSyncPending = ref(false);
 const sync = () => {
-  isSyncPending.value = true
-  $fetch('/api/v1/table-descriptions/sync-schemas', {
-    method: 'POST',
+  isSyncPending.value = true;
+  $fetch("/api/v1/table-descriptions/sync-schemas", {
+    method: "POST",
     body: {
       db_connection_id: connection.value,
     },
   })
-    .then(data => {
+    .then((data) => {
       // Вывести кол-во синканутых таблиц
       // data.length
     })
     .catch((reason) => {
-      console.error('error', reason)
+      console.error("error", reason);
     })
     .finally(() => {
-      isSyncPending.value = false
-    })
-}
+      isSyncPending.value = false;
+    });
+};
 
 // const query = ref('')
 const onSubmit = async () => {
-  const { valid, errors } = await form.validate()
-  console.log('PlaygroundChat: onSubmit hui', valid, errors)
+  const { valid, errors } = await form.validate();
+  console.log("PlaygroundChat: onSubmit hui", valid, errors);
 
-  console.log('PlaygroundChat: onSubmit')
-  emit('submit')
-  // try {
-  //   const res = await $fetch('/api/v1/prompts/sql-generations/nl-generations-in-chat', {
-  //     method: 'POST',
-  //     body: { hello: 'world ' },
-  //   })
+  console.log("PlaygroundChat: onSubmit");
+  emit("submit");
 
-  //   query.value = ''
-  // }
-  // catch (error) {
-  //   console.log('error', error)
-  // }
-}
+  const subscribeToThoughts = async () => {
+    console.log(query.value, connection.value);
+    const res = await $fetch("/api/v1/fake-stream-sql-generation", {
+      method: "POST",
+      body: {
+        prompt: {
+          text: query.value,
+          db_connection_id: connection.value,
+          metadata: {},
+        },
+      },
+    });
+
+    console.log(res);
+
+    // TODO: Change check?
+    if (res?.length) {
+      // trigger refresh chats (store)
+    }
+  };
+
+  subscribeToThoughts();
+};
 </script>
 
 <template>

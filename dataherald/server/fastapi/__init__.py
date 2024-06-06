@@ -702,7 +702,7 @@ class FastAPI(dataherald.server.Server):
         )
 
     async def fake_stream_sql_generation(
-        self, request: PromptSQLGenerationNLGenerationInChatRequest
+        self, request: StreamPromptSQLGenerationRequestInChat
     ) -> StreamingResponse:
         return StreamingResponse(
             self._api.fake_stream_sql_generation(request),
