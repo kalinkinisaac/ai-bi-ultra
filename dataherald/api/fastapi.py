@@ -1069,13 +1069,15 @@ class FastAPI(API):
                     break
                 # print value to console
                 print('value:', value, sep=' ', end='...')
-                value = value.replace('```sql', '\n```sql')
+                value['data'] = value['data'].replace('```sql', '\n```sql') + '\n\n'
                 # yield value
 
                 #
+                value.update({"chat_id": chat.id})
 
-                partial_message += value + '\n\n'
-                yield "data: {}\n\n".format(json.dumps({"text": value + '\n\n', "chat_id": chat.id}))
+                # partial_message += value + '\n\n'
+                # yield "data: {}\n\n".format(json.dumps({"text": value + '\n\n', "chat_id": chat.id}))
+                yield "data: {}\n\n".format(json.dumps(value))
 
                 queue.task_done()
                 await asyncio.sleep(0.001)
