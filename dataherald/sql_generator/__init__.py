@@ -181,11 +181,12 @@ class SQLGenerator(Component, ABC):
                     if "actions" in chunk:
                         for message in chunk["messages"]:
                             queue.put(
-                                dict(
-                                    assistant_message_type="thought",
-                                    content_type="text",
-                                    content=self.format_sql_query_intermediate_steps(message.content),
-                                )
+                                {"type": "thought", "data_type": "text", "data":
+                                    self.format_sql_query_intermediate_steps(
+                                        message.content
+                                    )
+                                    + "\n"
+                                 }
                             )
                     elif "steps" in chunk:
                         for step in chunk["steps"]:

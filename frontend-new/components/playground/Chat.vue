@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ChatPageProps } from "@/types";
+import type { ChatPageProps, ChatResponse } from "@/types";
 import { EChatRespondent } from "@/types";
 
 import { format } from "@formkit/tempo";
@@ -10,10 +10,13 @@ import * as z from "zod";
 
 import { type DatabaseConnectionsResponse } from "@/types/db";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
+import { toast } from "~/components/ui/toast";
 
 const { chatId, messages } = withDefaults(defineProps<ChatPageProps>(), {
   messages: null,
 });
+
+const messagesRef = ref<ChatResponse[]>(messages ?? []);
 
 type Response = {
   chat_id: string;
@@ -31,8 +34,8 @@ const connection = defineModel<string>("connection");
 // Form
 const formSchema = toTypedSchema(
   z.object({
-    query: z.string().min(1),
-    connection: z.string().min(1),
+    query: z.string({ required_error: "Не указан запрос" }).min(1),
+    connection: z.string({ required_error: "Не выбрано соединение" }).min(1),
   }),
 );
 
@@ -47,6 +50,7 @@ const { data } = await useFetch<DatabaseConnectionsResponse[]>(
 if (data.value?.length) {
   connection.value = data.value[0].id;
 }
+const isChatPending = ref(false);
 const isSyncPending = ref(false);
 const sync = () => {
   isSyncPending.value = true;
@@ -70,33 +74,56 @@ const sync = () => {
 
 // const query = ref('')
 const onSubmit = async () => {
-  const messages = [];
-
+  isChatPending.value = true;
   const { valid, errors } = await form.validate();
-  // emit("submit");
+
+  const userQuery: string = query.value?.trim() || "";
+
+  // Разобраться с валидацией @fesoo?
+  // if (!valid || !userQuery) {
+  //   console.log("errors", errors);
+  //   console.log("valid", valid);
+  //
+  //   toast({
+  //     title: "Ошибка",
+  //     description: errors?.query || errors?.connection || "Неизвестная ошибка",
+  //     variant: "destructive",
+  //   });
+  //   return;
+  // }
+
+  query.value = "";
+
+  messagesRef.value.push({
+    role: EChatRespondent.user,
+    data: userQuery,
+    created_at: format(new Date(), "YYYY-MM-DDTHH:mm:ssZ"),
+    chat_id: chatId,
+    type: "user_input",
+    data_type: "text",
+  });
+
   fetchEventSource("/api/v1/stream-sql-generation_in_chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       prompt: {
-        text: query.value,
+        text: userQuery,
         db_connection_id: connection.value,
         metadata: {},
       },
     }),
-    onopen(response) {
-      console.log("onopen", response);
-
-      return Promise.resolve();
-    },
     onmessage(response) {
+      const data = JSON.parse(response.data);
       console.log("onmessage", JSON.parse(response.data));
+      data.role = "ai";
+      messagesRef.value.push(data);
     },
-    onerror(response) {
-      console.log("onerror", response);
+    onerror() {
+      isChatPending.value = false;
     },
     onclose() {
-      console.log("onclose");
+      isChatPending.value = false;
     },
   });
 };
@@ -113,7 +140,6 @@ const onSubmit = async () => {
         </SelectTrigger>
         <SelectContent>
           <SelectItem v-for="(el, idx) in data" :key="idx" :value="el.id">
-            <!-- {{ el.alias || 'Без имени' }} -->
             <div
               class="flex items-center text-left gap-3 text-muted-foreground"
             >
@@ -136,10 +162,6 @@ const onSubmit = async () => {
         :disabled="isSyncPending"
         @click="sync"
       >
-        <!-- <LazyIconLoaderCircle
-            v-if="isSyncPending"
-            class="w-4 h-4 animate-spin"
-          /> -->
         <IconRefreshCcw
           class="w-4 h-4"
           :class="{ 'animate-spin': isSyncPending }"
@@ -153,7 +175,7 @@ const onSubmit = async () => {
       <!-- <slot /> -->
 
       <div class="flex flex-col gap-3 w-full">
-        <template v-for="message in messages" :key="message.id">
+        <template v-for="message in messagesRef" :key="message.id">
           <div
             class="p-4 text-sm rounded-md"
             :class="{
@@ -169,7 +191,7 @@ const onSubmit = async () => {
             <span class="font-bold"
               >{{ message.role === EChatRespondent.user ? "Вы" : "AI" }}:</span
             >
-            {{ message.content }}
+            {{ message.data }}
             <div
               v-if="message.sql"
               class="p-2 border border-opacity-30 rounded-md"
@@ -198,7 +220,9 @@ const onSubmit = async () => {
           type="submit"
           size="sm"
           class="ml-auto gap-1.5"
-          :disabled="isSyncPending"
+          :disabled="
+            isChatPending || isSyncPending || !query?.trim() || !connection
+          "
           @click.prevent="onSubmit"
         >
           Отправить

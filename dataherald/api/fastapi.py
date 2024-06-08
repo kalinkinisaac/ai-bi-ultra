@@ -1069,19 +1069,12 @@ class FastAPI(API):
                     break
                 # print value to console
                 print('value:', value, sep=' ', end='...')
-                value['content'] = value['content'].replace('```sql', '\n```sql') + '\n\n'
+                value['data'] = value['data'].replace('```sql', '\n```sql') + '\n\n'
                 # yield value
 
                 #
                 value.update({"chat_id": chat.id})
 
-                chat_message_service.create(
-                    chat_id=chat.id,
-                    role="assistant",
-                    content=value['content'],
-                    content_type=value['content_type'],
-                    assistant_message_type=value['assistant_message_type']
-                )
                 # partial_message += value + '\n\n'
                 # yield "data: {}\n\n".format(json.dumps({"text": value + '\n\n', "chat_id": chat.id}))
                 yield "data: {}\n\n".format(json.dumps(value))
