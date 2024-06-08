@@ -189,11 +189,12 @@ class SQLGenerator(Component, ABC):
                     elif "steps" in chunk:
                         for step in chunk["steps"]:
                             queue.put(
-                                f"\n**Observation:**\n {self.format_sql_query_intermediate_steps(step.observation)}\n"
+                                {"type": "observation", "data_type": "text", "data": self.format_sql_query_intermediate_steps(step.observation)}
                             )
                     elif "output" in chunk:
                         queue.put(
-                            f'\n**Final Answer:**\n {self.format_sql_query_intermediate_steps(chunk["output"])}'
+#                             f'\n**Final Answer:**\n {self.format_sql_query_intermediate_steps(chunk["output"])}'
+                            {"type": "final_answer", "data_type": "text", "data": self.format_sql_query_intermediate_steps(chunk["output"])}
                         )
                         if "```sql" in chunk["output"]:
                             response.sql = replace_unprocessable_characters(

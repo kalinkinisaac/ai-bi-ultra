@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ChatResponse } from "@/types";
+import type { ChatPageProps } from "@/types";
 import { EChatRespondent } from "@/types";
 
 import { format } from "@formkit/tempo";
@@ -9,15 +9,19 @@ import { toTypedSchema } from "@vee-validate/zod";
 import * as z from "zod";
 
 import { type DatabaseConnectionsResponse } from "@/types/db";
+import { fetchEventSource } from "@microsoft/fetch-event-source";
 
-withDefaults(
-  defineProps<{
-    messages: ChatResponse[] | null;
-  }>(),
-  {
-    messages: null,
-  },
-);
+const { chatId, messages } = withDefaults(defineProps<ChatPageProps>(), {
+  messages: null,
+});
+
+type Response = {
+  chat_id: string;
+  text: string;
+  role: "ai";
+  type: "thought" | "observation" | "info" | "error" | "final_answer";
+};
+
 const emit = defineEmits<{
   submit: [];
 }>();
@@ -37,7 +41,9 @@ const form = useForm({
 });
 
 // Settings
-const { data } = await useFetch<DatabaseConnectionsResponse[]>("/api/v1/database-connections");
+const { data } = await useFetch<DatabaseConnectionsResponse[]>(
+  "/api/v1/database-connections",
+);
 if (data.value?.length) {
   connection.value = data.value[0].id;
 }
@@ -64,51 +70,58 @@ const sync = () => {
 
 // const query = ref('')
 const onSubmit = async () => {
+  const messages = [];
+
   const { valid, errors } = await form.validate();
-  console.log("PlaygroundChat: onSubmit hui", valid, errors);
+  // emit("submit");
+  fetchEventSource("/api/v1/stream-sql-generation_in_chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      prompt: {
+        text: query.value,
+        db_connection_id: connection.value,
+        metadata: {},
+      },
+    }),
+    onopen(response) {
+      console.log("onopen", response);
 
-  console.log("PlaygroundChat: onSubmit");
-  emit("submit");
-
-  const subscribeToThoughts = async () => {
-
-    console.log(query.value, connection.value);
-    const eventSource = new EventSource('/api/v2/fake-stream-sql-generation?text=' + query.value + '&connection_id=' + connection.value, {withCredentials: true});
-
-    eventSource.onmessage = (event) => {
-      console.log(event.data)
-    }
-  };
-
-  subscribeToThoughts();
+      return Promise.resolve();
+    },
+    onmessage(response) {
+      console.log("onmessage", JSON.parse(response.data));
+    },
+    onerror(response) {
+      console.log("onerror", response);
+    },
+    onclose() {
+      console.log("onclose");
+    },
+  });
 };
 </script>
 
 <template>
-  <div class="relative flex h-screen min-h-[50vh] flex-col rounded-xl bg-muted/20 p-4 lg:col-span-2">
+  <div
+    class="relative flex h-screen min-h-[50vh] flex-col rounded-xl bg-muted/20 p-4 lg:col-span-2"
+  >
     <div class="absolute flex flex-row gap-2 z-10">
       <Select v-model="connection">
         <SelectTrigger>
-          <SelectValue
-            placeholder="Выберите БД"
-          />
+          <SelectValue placeholder="Выберите БД" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem
-            v-for="(el, idx) in data"
-            :key="idx"
-            :value="el.id"
-          >
+          <SelectItem v-for="(el, idx) in data" :key="idx" :value="el.id">
             <!-- {{ el.alias || 'Без имени' }} -->
-            <div class="flex items-center text-left gap-3 text-muted-foreground">
+            <div
+              class="flex items-center text-left gap-3 text-muted-foreground"
+            >
               <div class="grid gap-0.5">
                 <span class="font-medium text-foreground">
-                  {{ el.alias || 'Без имени' }}
+                  {{ el.alias || "Без имени" }}
                 </span>
-                <p
-                  class="text-xs"
-                  data-description
-                >
+                <p class="text-xs" data-description>
                   {{ el.id }}
                 </p>
               </div>
@@ -129,58 +142,51 @@ const onSubmit = async () => {
           /> -->
         <IconRefreshCcw
           class="w-4 h-4"
-          :class="{'animate-spin': isSyncPending }"
+          :class="{ 'animate-spin': isSyncPending }"
         />
-        <div class="hidden md:block">
-          Синх-ция таблиц
-        </div>
+        <div class="hidden md:block">Синх-ция таблиц</div>
       </Button>
     </div>
-    <Badge
-      variant="outline"
-      class="absolute right-4 top-3"
-    >
-      Вывод
-    </Badge>
+    <Badge variant="outline" class="absolute right-4 top-3"> Вывод </Badge>
 
-    <ScrollArea
-      class="flex-1 flex w-full items-end pb-3 pt-14"
-    >
-
+    <ScrollArea class="flex-1 flex w-full items-end pb-3 pt-14">
       <!-- <slot /> -->
 
       <div class="flex flex-col gap-3 w-full">
-        <template
-          v-for="message in messages"
-          :key="message.id"
-        >
+        <template v-for="message in messages" :key="message.id">
           <div
             class="p-4 text-sm rounded-md"
             :class="{
-              'bg-primary/10 rounded-bl-none self-end': message.role === EChatRespondent.user,
-              'bg-foreground text-primary-foreground rounded-bl-none self-start': message.role === EChatRespondent.assistant
+              'bg-primary/10 rounded-bl-none self-end':
+                message.role === EChatRespondent.user,
+              'bg-foreground text-primary-foreground rounded-bl-none self-start':
+                message.role === EChatRespondent.assistant,
             }"
           >
-            <div class="text-xs opacity-50">{{ format(message.created_at, 'HH:mm') }}</div>
-            <span class="font-bold">{{ message.role === EChatRespondent.user ? 'Вы' : 'AI' }}:</span>
+            <div class="text-xs opacity-50">
+              {{ format(message.created_at, "HH:mm") }}
+            </div>
+            <span class="font-bold"
+              >{{ message.role === EChatRespondent.user ? "Вы" : "AI" }}:</span
+            >
             {{ message.content }}
-            <div v-if="message.sql" class="p-2 border border-opacity-30 rounded-md">
+            <div
+              v-if="message.sql"
+              class="p-2 border border-opacity-30 rounded-md"
+            >
               <Shiki lang="sql" :code="message.sql" />
               <pre>message.sql</pre>
-              <pre>{{message.sql}}</pre>
+              <pre>{{ message.sql }}</pre>
             </div>
           </div>
         </template>
       </div>
     </ScrollArea>
 
-    <form class="flex-none relative overflow-hidden rounded-lg border bg-background focus-within:ring-1 focus-within:ring-ring">
-      <Label
-        for="message"
-        class="sr-only"
-      >
-        Запрос
-      </Label>
+    <form
+      class="flex-none relative overflow-hidden rounded-lg border bg-background focus-within:ring-1 focus-within:ring-ring"
+    >
+      <Label for="message" class="sr-only"> Запрос </Label>
       <Textarea
         v-model="query"
         placeholder="Введите ваш запрос..."

@@ -1067,9 +1067,12 @@ class FastAPI(API):
                 value = queue.get()
                 if value is None:
                     break
-
+                # print value to console
+                print('value:', value, sep=' ', end='...')
                 value = value.replace('```sql', '\n```sql')
                 # yield value
+
+                #
 
                 partial_message += value + '\n\n'
                 yield "data: {}\n\n".format(json.dumps({"text": value + '\n\n', "chat_id": chat.id}))

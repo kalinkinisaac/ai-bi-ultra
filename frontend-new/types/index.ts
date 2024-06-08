@@ -15,3 +15,8 @@ export interface ChatResponse {
   created_at: string;
   sql?: string; // TODO: Только для теста, убрать (!)
 }
+
+export interface ChatPageProps {
+  messages: ChatResponse[] | null;
+  chatId: string;
+}
