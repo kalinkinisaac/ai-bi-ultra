@@ -17,6 +17,8 @@
     "@vueuse/core": "^10.9.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
+    "deep-chat": "^1.4.11",
+    "highlight.js": "^11.9.0",
     "lucide-vue-next": "^0.357.0",
     "pinia": "^2.1.7",
     "radix-vue": "^1.5.2",
