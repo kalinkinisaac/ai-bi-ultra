@@ -4,23 +4,26 @@
 
 export enum EChatRespondent {
   user = "user",
-  assistant = "ai",
+  assistant = "assistant",
+}
+
+export enum EChatAssistantMessageType {
+  thought = "thought",
+  observation = "observation",
+  info = "info",
+  error = "error",
+  final_answer = "final_answer",
+  user_input = "user_input",
 }
 
 export interface ChatResponse {
   // id: string;
   chat_id: string;
-  data: string;
+  content: string;
   role: keyof typeof EChatRespondent;
-  created_at: string;
-  type:
-    | "thought"
-    | "observation"
-    | "info"
-    | "error"
-    | "final_answer"
-    | "user_input";
-  data_type: "text" | "image" | "video" | "audio" | "file";
+  created_at?: string;
+  assistant_message_type: keyof typeof EChatAssistantMessageType;
+  content_type: "text" | "image" | "video" | "audio" | "file";
 }
 
 export interface ChatPageProps {

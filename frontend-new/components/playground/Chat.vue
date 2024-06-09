@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ChatPageProps, ChatResponse } from "@/types";
-import { EChatRespondent } from "@/types";
+import { EChatAssistantMessageType, EChatRespondent } from "@/types";
 
 import { format } from "@formkit/tempo";
 
@@ -73,11 +73,11 @@ const onSubmit = async () => {
 
   messagesRef.value.push({
     role: EChatRespondent.user,
-    data: userQuery,
+    content: userQuery,
     created_at: format(new Date(), "YYYY-MM-DDTHH:mm:ssZ"),
     chat_id: chatId,
-    type: "user_input",
-    data_type: "text",
+    content_type: "text",
+    assistant_message_type: EChatAssistantMessageType.user_input,
   });
 
   fetchEventSource("/api/v1/stream-sql-generation_in_chat", {
@@ -165,7 +165,8 @@ const onSubmit = async () => {
               'bg-primary/10 rounded-bl-none self-end':
                 message.role === EChatRespondent.user,
               'bg-foreground text-primary-foreground rounded-bl-none self-start':
-                message.role === EChatRespondent.assistant,
+                message.assistant_message_type !==
+                EChatAssistantMessageType.user_input,
             }"
           >
             <div class="text-xs opacity-50">
@@ -174,15 +175,15 @@ const onSubmit = async () => {
             <span class="font-bold"
               >{{ message.role === EChatRespondent.user ? "Вы" : "AI" }}:</span
             >
-            {{ message.data }}
-            <div
-              v-if="message.sql"
-              class="p-2 border border-opacity-30 rounded-md"
-            >
-              <Shiki lang="sql" :code="message.sql" />
-              <pre>message.sql</pre>
-              <pre>{{ message.sql }}</pre>
-            </div>
+            {{ message.content }}
+            <!--            <div-->
+            <!--              v-if="message.sql"-->
+            <!--              class="p-2 border border-opacity-30 rounded-md"-->
+            <!--            >-->
+            <!--              <Shiki lang="sql" :code="message.sql" />-->
+            <!--              <pre>message.sql</pre>-->
+            <!--              <pre>{{ message.sql }}</pre>-->
+            <!--            </div>-->
           </div>
         </template>
       </div>
