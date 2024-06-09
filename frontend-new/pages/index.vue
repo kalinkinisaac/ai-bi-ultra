@@ -1,45 +1,34 @@
 <script setup lang="ts">
-import type { ChatResponse } from "@/types";
+import { useGlobalChats } from "~/stores/useGlobalChats";
 
-const prompt = ref({
-  query: "",
-  connection: "",
+const { chats, isChatsLoading, addTempChat } = useGlobalChats();
+
+const latestChatId = computed<string>(() => {
+  return chats;
 });
-
-const onSubmit = async () => {
-  // prompt with query
-  const res = await $fetch<ChatResponse>("/api/v1/prompts/sql-generations/nl-generations-in-chat", {
-    method: "POST",
-    body: {
-      sql_generation: {
-        prompt: {
-          text: prompt.value.query,
-          db_connection_id: prompt.value.connection,
-          metadata: {},
-        },
-      },
-    },
-  });
-  console.log("res onSubmit", res);
-  // TODO: Change check?
-  if (res?.chat_id !== undefined) {
-    // trigger refresh chats (store)
-
-    // replace to new chat
-    navigateTo({
-      name: "chats-id",
-      params: {
-        id: res.chat_id,
-      },
-    });
-  }
-};
 </script>
 
 <template>
-  <PlaygroundChat
-    v-model:query="prompt.query"
-    v-model:connection="prompt.connection"
-    @submit="onSubmit"
-  />
+  <div class="flex flex-col items-center justify-center h-screen text-center">
+    <h1 class="text-4xl text-gray-700">Welcome to our application!</h1>
+    <p class="text-xl text-gray-500">This is a simple welcome page.</p>
+    <div class="flex justify-center gap-4 mt-4">
+      <NuxtLink
+        :to="{
+          name: 'chats-id',
+          params: { id: latestChatId },
+        }"
+      >
+        <Button>Go to latest chat</Button>
+      </NuxtLink>
+      <NuxtLink
+        :to="{
+          name: 'chats-id',
+        }"
+        @click="addTempChat"
+      >
+        <Button>New chat</Button>
+      </NuxtLink>
+    </div>
+  </div>
 </template>

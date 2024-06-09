@@ -35,7 +35,7 @@ from dataherald.api.types.responses import (
     PromptResponse,
     SQLGenerationResponse,
     TableDescriptionResponse,
-    ChatResponse, ChatMessageResponse, DatabaseTableResponse,
+    Message, ChatMessageResponse, DatabaseTableResponse,
 )
 from dataherald.config import System
 from dataherald.context_store import ContextStore
@@ -178,7 +178,7 @@ class FastAPI(API):
         return [TableDescriptionResponse(**row.dict()) for row in rows]
 
     @override
-    def create_chat(self, chat_request: ChatRequest) -> ChatResponse:
+    def create_chat(self, chat_request: ChatRequest) -> Message:
         try:
             chat = Chat(
                 title="Random name: {}".format(uuid.uuid4().hex),
@@ -187,7 +187,7 @@ class FastAPI(API):
             chat = chat_repository.insert(chat)
         except Exception as e:
             return error_response(e, chat_request.dict(), "chat_not_created")
-        return ChatResponse(**chat.dict())
+        return Message(**chat.dict())
 
     @override
     def create_database_connection(
@@ -291,11 +291,11 @@ class FastAPI(API):
 
 
     @override
-    def list_chats(self) -> list[ChatResponse]:
+    def list_chats(self) -> list[Message]:
         chat_repository = ChatRepository(self.storage)
         chats = chat_repository.find_all()
         return [
-            ChatResponse(**chat.dict())
+            Message(**chat.dict())
             for chat in chats
         ]
 
@@ -1069,8 +1069,8 @@ class FastAPI(API):
                     break
                 # print value to console
                 print('value:', value, sep=' ', end='...')
-                if isinstance(value['content'], str):
-                    value['content'] = value['content'].replace('```sql', '\n```sql') + '\n\n'
+                print("VALUE: ", value)
+                value['content'] = value['content'].replace('```sql', '\n```sql') + '\n\n'
                 # yield value
 
                 #
@@ -1091,6 +1091,7 @@ class FastAPI(API):
                 queue.task_done()
                 await asyncio.sleep(0.001)
         except Exception as e:
+            print('exception', e)
             yield "data: {}\n\n".format(json.dumps(
                 stream_error_response(e, request.dict(), "nl_generation_not_created")
             ))

@@ -1,11 +1,14 @@
-FROM node:lts-alpine
+FROM node:20
 
 WORKDIR /app
 
 COPY package*.json ./
+
+RUN npx nuxi cleanup
+
 RUN npm ci --loglevel verbose
 
-RUN npx nuxt prepare
+RUN npx nuxi prepare
 
 COPY . .
 
@@ -15,6 +18,6 @@ COPY . .
 
 # EXPOSE 3000
 
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "dev-with-cleanup"]
 #CMD ["tail", "-f", "/dev/null"]
 # ENTRYPOINT ["node", ".output/server/index.mjs"]

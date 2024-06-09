@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ChatPageProps, ChatResponse } from "@/types";
 import { EChatAssistantMessageType, EChatRespondent } from "@/types";
+import { useGlobalChats } from "~/stores/useGlobalChats";
 
 import { format } from "@formkit/tempo";
 
@@ -10,15 +10,20 @@ import * as z from "zod";
 
 import { type DatabaseConnectionsResponse } from "@/types/db";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
+import { randomUUID } from "crypto";
 
-const { chatId, messages } = withDefaults(defineProps<ChatPageProps>(), {
-  messages: null,
-});
+const route = useRoute();
 
-const messagesRef = ref<ChatResponse[]>(messages ?? []);
+const chatId = computed(
+  () =>
+    (Array.isArray(route.params.id) ? route.params.id[0] : route.params.id) ||
+    "temp",
+);
 
 const query = defineModel<string>("query");
 const connection = defineModel<string>("connection");
+
+const { getChatById, addMessageToChat, chats } = useGlobalChats();
 
 // Form
 const formSchema = toTypedSchema(
@@ -64,18 +69,19 @@ const sync = () => {
 };
 
 const onSubmit = async () => {
+  console.log("onSubmit");
   isChatPending.value = true;
-  // const { valid, errors } = await form.validate();
 
   const userQuery: string = query.value?.trim() || "";
 
   query.value = "";
 
-  messagesRef.value.push({
+  addMessageToChat(chatId.value, {
+    id: randomUUID(),
     role: EChatRespondent.user,
     content: userQuery,
     created_at: format(new Date(), "YYYY-MM-DDTHH:mm:ssZ"),
-    chat_id: chatId,
+    chat_id: chatId.value,
     content_type: "text",
     assistant_message_type: EChatAssistantMessageType.user_input,
   });
@@ -84,6 +90,7 @@ const onSubmit = async () => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      chat_id: chatId.value,
       prompt: {
         text: userQuery,
         db_connection_id: connection.value,
@@ -96,9 +103,6 @@ const onSubmit = async () => {
     }),
     onmessage(response) {
       const data = JSON.parse(response.data);
-      console.log("onmessage", JSON.parse(response.data));
-      // data.role = "ai";
-      messagesRef.value.push(data);
     },
     onerror(error) {
       console.log(error);
@@ -152,21 +156,20 @@ const onSubmit = async () => {
         <div class="hidden md:block">Синх-ция таблиц</div>
       </Button>
     </div>
-    <Badge variant="outline" class="absolute right-4 top-3"> Вывод </Badge>
 
     <ScrollArea class="flex-1 flex w-full items-end pb-3 pt-14">
-      <!-- <slot /> -->
-
       <div class="flex flex-col gap-3 w-full">
-        <template v-for="message in messagesRef" :key="message.id">
+        <template
+          v-for="message in getChatById(chatId).messages"
+          :key="message.id"
+        >
           <div
             class="p-4 text-sm rounded-md"
             :class="{
-              'bg-primary/10 rounded-bl-none self-end':
+              'bg-primary/10 rounded-br-none self-end':
                 message.role === EChatRespondent.user,
               'bg-foreground text-primary-foreground rounded-bl-none self-start':
-                message.assistant_message_type !==
-                EChatAssistantMessageType.user_input,
+                message.role === 'assistant',
             }"
           >
             <div class="text-xs opacity-50">
@@ -176,14 +179,6 @@ const onSubmit = async () => {
               >{{ message.role === EChatRespondent.user ? "Вы" : "AI" }}:</span
             >
             {{ message.content }}
-            <!--            <div-->
-            <!--              v-if="message.sql"-->
-            <!--              class="p-2 border border-opacity-30 rounded-md"-->
-            <!--            >-->
-            <!--              <Shiki lang="sql" :code="message.sql" />-->
-            <!--              <pre>message.sql</pre>-->
-            <!--              <pre>{{ message.sql }}</pre>-->
-            <!--            </div>-->
           </div>
         </template>
       </div>

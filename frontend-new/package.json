@@ -8,10 +8,12 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "dev-with-cleanup": "nuxi cleanup && nuxi prepare && nuxi dev"
   },
   "dependencies": {
     "@formkit/tempo": "^0.0.19",
+    "@microsoft/fetch-event-source": "^2.0.1",
     "@pinia/nuxt": "^0.5.1",
     "@vee-validate/zod": "^4.12.6",
     "@vueuse/core": "^10.9.0",

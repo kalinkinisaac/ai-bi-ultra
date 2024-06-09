@@ -74,15 +74,14 @@ PLAN_BASE = """1) Use the DbTablesWithRelevanceScores tool to find relevant tabl
 4) [Optional based on the question] Use the SystemTime tool if the question has any mentions of time or dates.
 5) For string columns, always use the DbColumnEntityChecker tool to make sure the entity values are present in the relevant columns.
 6) Write a {dialect} query and always use SqlDbQuery tool the Execute the SQL query on the database to check if the results are correct.
-7) If the answer has a nice fit into the chart form or the user prompt asks for drawing chart then use ValidateChartDataAndSendItToUserTool. Once you have drawn valid and final chart (the last one will be drawn), continue to the next steps or final answer.
+7) If the answer has a nice fit into the chart form or the user prompt asks for drawing chart then use ValidateChartDataAndSendItToUserTool.
 #
 Some tips to always keep in mind:
 tip1) If the SQL query resulted in errors or not correct results, rewrite the SQL query and try again.
 tip2) If SQL results has None or NULL values, handle them by adding a WHERE clause to filter them out.
 tip3) The existance of the string values in the columns should always be checked using the DbColumnEntityChecker tool.
 tip4) You should always execute the SQL query by calling the SqlDbQuery tool to make sure the results are correct.
-tip5) You should always validate the graph data (if you want to draw a graph) by calling ValidateChartDataAndSendItToUserTool to make sure the results are correct. If it is not correct, you should redo it and validate again, only last will be shown.
-tip6) If you have validated a graph, you should continue to the next steps or final answer. 
+tip5) You should always validate the graph data (if you want to draw a graph) by calling ValidateChartDataAndSendItToUserTool to make sure the results are correct.
 """  # noqa: E501
 
 FORMAT_INSTRUCTIONS = """Use the following format:
@@ -99,13 +98,13 @@ Final Answer: the final answer to the original input question. Use {language} la
 SUFFIX_WITH_FEW_SHOT_SAMPLES = """Begin!
 
 Question: {{input}}
-Thought: I should Collect examples of Question/SQL pairs to check if there is a similar question among the examples. Use {language} language
+Thought: I should Collect examples of Question/SQL pairs to check if there is a similar question among the examples.
 {{agent_scratchpad}}"""  # noqa: E501
 
 SUFFIX_WITHOUT_FEW_SHOT_SAMPLES = """Begin!
 
 Question: {{input}}
-Thought: I should find the relevant tables. (Translate it to {language} language if needed)
+Thought: I should find the relevant tables.
 {{agent_scratchpad}}"""
 
 FINETUNING_SYSTEM_INFORMATION = """

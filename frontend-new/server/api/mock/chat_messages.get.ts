@@ -1,4 +1,4 @@
-import type { ChatResponse } from "@/types";
+import type { Message } from "@/types";
 // interface ChatRequest {
 //   chat_id: string
 // }
@@ -10,7 +10,7 @@ import type { ChatResponse } from "@/types";
 //   created_at: string
 // }
 
-export default defineEventHandler((event): ChatResponse[] => {
+export default defineEventHandler((event): Message[] => {
   return [
     {
       id: "6612e78b7be060aad384d806",

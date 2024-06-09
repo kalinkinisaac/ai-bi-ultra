@@ -107,7 +107,7 @@ class GoldenSQLResponse(BaseResponse, GoldenSQL):
     pass
 
 
-class ChatResponse(BaseResponse):
+class Message(BaseResponse):
     id: str
     title: str
     created_at: datetime

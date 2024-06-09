@@ -198,7 +198,7 @@ class ValidateChartDataAndSendItToUserTool(BaseSQLDatabaseTool, BaseTool):
     Example input: [1, 2, 3], [4, 5, 6]
     Example output: [(1, 4), (2, 5), (3, 6)]
     If an error occurs, rewrite the query and retry.
-    Use this tool to validate and draw charts. Once you have drawn valid and final chart (the last one will be drawn), continue to the next steps or final answer.
+    Use this tool to validate and draw charts.
     """
 
     @catch_exceptions()

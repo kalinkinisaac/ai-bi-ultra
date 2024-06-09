@@ -16,17 +16,25 @@ export enum EChatAssistantMessageType {
   user_input = "user_input",
 }
 
-export interface ChatResponse {
-  // id: string;
+export interface Message {
+  // id of message itself
+  id: string;
   chat_id: string;
-  content: string;
   role: keyof typeof EChatRespondent;
-  created_at?: string;
-  assistant_message_type: keyof typeof EChatAssistantMessageType;
+  content: string;
   content_type: "text" | "image" | "video" | "audio" | "file";
+  assistant_message_type: keyof typeof EChatAssistantMessageType;
+  created_at: string;
+}
+
+export interface ChatsResponse {
+  id: string;
+  metadata: Record<any, any> | null;
+  created_at: string;
+  title: string;
 }
 
 export interface ChatPageProps {
-  messages: ChatResponse[] | null;
+  messages: Message[] | null;
   chatId: string;
 }

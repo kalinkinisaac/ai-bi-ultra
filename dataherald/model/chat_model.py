@@ -22,11 +22,8 @@ class ChatModel(LLMModel):
         **kwargs: Any
     ) -> Any:
         api_key = database_connection.decrypt_api_key()
-        # api_base = 'http://host.docker.internal:1234/v1'
-        # model_name = 'lmstudio-community/Meta-Llama-3-8B-Instruct-GGUF'
-        # api_base = 'https://api.pawan.krd/v1'
-        # model_name = 'pai-001'
-        # api_key = 'pk-meRIymsVyHPLFNYJOEfpNgUyoeyJXaHMRldSHbghHWIduOjt'
+        model_name = 'phi3:mini-128k'
+        api_base = 'http://host.docker.internal:11434/v1'
         if model_family == "openai":
             return ChatOpenAI(
                 model_name=model_name,
