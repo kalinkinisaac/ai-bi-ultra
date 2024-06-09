@@ -1069,7 +1069,7 @@ class FastAPI(API):
                     break
                 # print value to console
                 print('value:', value, sep=' ', end='...')
-                value['data'] = value['data'].replace('```sql', '\n```sql') + '\n\n'
+                value['content'] = value['content'].replace('```sql', '\n```sql') + '\n\n'
                 # yield value
 
                 #
