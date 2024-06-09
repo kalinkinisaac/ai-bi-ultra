@@ -10,7 +10,6 @@ import * as z from "zod";
 
 import { type DatabaseConnectionsResponse } from "@/types/db";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
-import { toast } from "~/components/ui/toast";
 
 const { chatId, messages } = withDefaults(defineProps<ChatPageProps>(), {
   messages: null,
@@ -18,16 +17,6 @@ const { chatId, messages } = withDefaults(defineProps<ChatPageProps>(), {
 
 const messagesRef = ref<ChatResponse[]>(messages ?? []);
 
-type Response = {
-  chat_id: string;
-  text: string;
-  role: "ai";
-  type: "thought" | "observation" | "info" | "error" | "final_answer";
-};
-
-const emit = defineEmits<{
-  submit: [];
-}>();
 const query = defineModel<string>("query");
 const connection = defineModel<string>("connection");
 
@@ -47,11 +36,13 @@ const form = useForm({
 const { data } = await useFetch<DatabaseConnectionsResponse[]>(
   "/api/v1/database-connections",
 );
+
 if (data.value?.length) {
   connection.value = data.value[0].id;
 }
 const isChatPending = ref(false);
 const isSyncPending = ref(false);
+
 const sync = () => {
   isSyncPending.value = true;
   $fetch("/api/v1/table-descriptions/sync-schemas", {
@@ -72,25 +63,11 @@ const sync = () => {
     });
 };
 
-// const query = ref('')
 const onSubmit = async () => {
   isChatPending.value = true;
-  const { valid, errors } = await form.validate();
+  // const { valid, errors } = await form.validate();
 
   const userQuery: string = query.value?.trim() || "";
-
-  // Разобраться с валидацией @fesoo?
-  // if (!valid || !userQuery) {
-  //   console.log("errors", errors);
-  //   console.log("valid", valid);
-  //
-  //   toast({
-  //     title: "Ошибка",
-  //     description: errors?.query || errors?.connection || "Неизвестная ошибка",
-  //     variant: "destructive",
-  //   });
-  //   return;
-  // }
 
   query.value = "";
 
@@ -112,17 +89,23 @@ const onSubmit = async () => {
         db_connection_id: connection.value,
         metadata: {},
       },
+      llm_config: {
+        llm_family: "fake",
+        llm_name: "fake_model",
+      },
     }),
     onmessage(response) {
       const data = JSON.parse(response.data);
       console.log("onmessage", JSON.parse(response.data));
-      data.role = "ai";
+      // data.role = "ai";
       messagesRef.value.push(data);
     },
-    onerror() {
+    onerror(error) {
+      console.log(error);
       isChatPending.value = false;
     },
     onclose() {
+      console.log("onclose");
       isChatPending.value = false;
     },
   });
