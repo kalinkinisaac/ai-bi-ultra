@@ -174,6 +174,7 @@ class Prompt(BaseModel):
 
 
 class LLMConfig(BaseModel):
+    llm_family: str = os.getenv("LLM_FAMILY", "openai")
     llm_name: str = os.getenv("LLM_NAME", "gpt-4-turbo-preview")
     api_base: str | None = None
 
@@ -225,6 +226,8 @@ class ChatMessage(BaseModel):
     chat_id: str
     role: str
     content: str
+    content_type: str | None
+    assistant_message_type: str | None = None
     created_at: datetime = Field(default_factory=datetime.now)
 
 

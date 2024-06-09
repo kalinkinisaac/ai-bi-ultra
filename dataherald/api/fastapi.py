@@ -1069,12 +1069,19 @@ class FastAPI(API):
                     break
                 # print value to console
                 print('value:', value, sep=' ', end='...')
-                value['data'] = value['data'].replace('```sql', '\n```sql') + '\n\n'
+                value['content'] = value['content'].replace('```sql', '\n```sql') + '\n\n'
                 # yield value
 
                 #
                 value.update({"chat_id": chat.id})
 
+                chat_message_service.create(
+                    chat_id=chat.id,
+                    role="assistant",
+                    content=value['content'],
+                    content_type=value['content_type'],
+                    assistant_message_type=value['assistant_message_type']
+                )
                 # partial_message += value + '\n\n'
                 # yield "data: {}\n\n".format(json.dumps({"text": value + '\n\n', "chat_id": chat.id}))
                 yield "data: {}\n\n".format(json.dumps(value))
@@ -1085,13 +1092,13 @@ class FastAPI(API):
             yield "data: {}\n\n".format(json.dumps(
                 stream_error_response(e, request.dict(), "nl_generation_not_created")
             ))
-        finally:
-            if partial_message != '':
-                chat_message_service.create(
-                    chat_id=chat.id,
-                    role="assistant",
-                    content=partial_message,
-                )
+        # finally:
+        #     if partial_message != '':
+        #         chat_message_service.create(
+        #             chat_id=chat.id,
+        #             role="assistant",
+        #             content=partial_message,
+        #         )
 
     @override
     async def fake_stream_sql_generation(

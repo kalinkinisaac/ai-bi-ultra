@@ -20,11 +20,15 @@ class ChatMessageService:
             chat_id: str,
             role: str,
             content: str,
+            content_type: str = "text",
+            assistant_message_type: str = None,
     ) -> ChatMessage:
         initial_chat_message = ChatMessage(
             chat_id=chat_id,
             role=role,
             content=content,
+            content_type=content_type,
+            assistant_message_type=assistant_message_type
         )
         return self.chat_message_repository.insert(initial_chat_message)
 

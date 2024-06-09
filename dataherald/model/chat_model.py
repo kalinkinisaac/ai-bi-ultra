@@ -1,6 +1,6 @@
 from typing import Any
 
-from langchain_community.chat_models import ChatAnthropic, ChatCohere, ChatGooglePalm
+from langchain_community.chat_models import ChatAnthropic, ChatCohere, ChatGooglePalm, FakeListChatModel
 from langchain_openai import ChatOpenAI
 from overrides import override
 
@@ -40,4 +40,6 @@ class ChatModel(LLMModel):
             )
         if model_family == "cohere":
             return ChatCohere(model_name=model_name, cohere_api_key=api_key, **kwargs)
+        if model_family == "fake":
+            return FakeListChatModel(model_name=model_name, responses=["Thought: I now know the final answer\nFinal Answer: да забей)"]*100,**kwargs)
         raise ValueError("No valid API key environment variable found")
