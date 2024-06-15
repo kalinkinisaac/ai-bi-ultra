@@ -22,18 +22,14 @@ import {
         >
           <Avatar class="w-8 h-8">
             <AvatarImage
-              src="https://github.com/radix-vue.png"
+              src="https://commons.wikimedia.org/wiki/File:Sample_User_Icon.png"
               alt="@radix-vue"
             />
-            <AvatarFallback>A</AvatarFallback>
+            <AvatarFallback>K</AvatarFallback>
           </Avatar>
           <div class="flex flex-col items-start">
-            <div class="font-bold">
-              Kirill Fedichkin
-            </div>
-            <div class="text-xs opacity-60">
-              afesoo@gmail.com
-            </div>
+            <div class="font-bold">Kirill Ivanov</div>
+            <div class="text-xs opacity-60">kivanov@aibi.su</div>
           </div>
         </Button>
       </DropdownMenuTrigger>
@@ -41,9 +37,7 @@ import {
         <DropdownMenuItem>Мой план</DropdownMenuItem>
         <DropdownMenuItem>Базы данных</DropdownMenuItem>
         <DropdownMenuItem>Организации</DropdownMenuItem>
-        <DropdownMenuItem>
-          Настройки
-        </DropdownMenuItem>
+        <DropdownMenuItem> Настройки </DropdownMenuItem>
         <DropdownMenuItem>Выйти</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

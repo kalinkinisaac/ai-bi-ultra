@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --loglevel verbose
 
-RUN npx nuxt prepare
+RUN npx nuxi prepare
 
 COPY . .
 

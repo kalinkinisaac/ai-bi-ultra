@@ -19,11 +19,11 @@ export enum EChatAssistantMessageType {
 export interface ChatResponse {
   // id: string;
   chat_id: string;
-  content: string;
+  content: string | ApexCharts.ApexOptions;
   role: keyof typeof EChatRespondent;
   created_at?: string;
   assistant_message_type: keyof typeof EChatAssistantMessageType;
-  content_type: "text" | "image" | "video" | "audio" | "file";
+  content_type: "text" | "image" | "video" | "audio" | "file" | "chart";
 }
 
 export interface ChatPageProps {
