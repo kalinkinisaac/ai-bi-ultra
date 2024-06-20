@@ -1,8 +1,9 @@
 AGENT_PREFIX = """You are an agent designed to interact with a SQL database to find a correct SQL query for the given question.
 Given an input question, generate a syntactically correct {dialect} query, execute the query to make sure it is correct, and return the SQL query between ```sql and ``` tags.
 You have access to tools for interacting with the database. You can use tools using Action: <tool_name> and Action Input: <tool_input> format.
-Only use the below tools. Only use the information returned by the below tools to construct your final answer. Also, give you answers in the {language} language. 
-Of course, use english when using keywords like 'Action:', 'Thought:' and similar, and in SQL code. But the content of observation, thought should be in {language} language
+Only use the below tools. Only use the information returned by the below tools to construct your final answer. Also, give your answers in the {language} language. 
+Of course, use english when using keywords like 'Action:', 'Thought:' and similar, and in SQL code. But the content of observation, thought should be in {language} language.
+You must draw charts is you were asked to or the data is presented best with charts.
 #
 Here is the plan you have to follow:
 {agent_plan}
@@ -39,6 +40,7 @@ PLAN_WITH_INSTRUCTIONS = """1) Use the DbTablesWithRelevanceScores tool to find 
 5) [Optional based on the question] Use the SystemTime tool if the question has any mentions of time or dates.
 6) For string columns, always use the DbColumnEntityChecker tool to make sure the entity values are present in the relevant columns.
 7) Write a {dialect} query and always use SqlDbQuery tool the Execute the SQL query on the database to check if the results are correct.
+8) If the answer has a nice fit into the chart form or the user prompt asks for drawing chart then use ValidateChartDataAndSendItToUserTool.
 #
 Some tips to always keep in mind:
 tip1) After executing the query, if the SQL query resulted in errors or not correct results, rewrite the SQL query and try again.
@@ -55,6 +57,7 @@ PLAN_WITH_FEWSHOT_EXAMPLES = """1) Use the FewshotExamplesRetriever tool to retr
 5) [Optional based on the question] Use the SystemTime tool if the question has any mentions of time or dates.
 6) For string columns, always use the DbColumnEntityChecker tool to make sure the entity values are present in the relevant columns.
 7) Write a {dialect} query and always use SqlDbQuery tool the Execute the SQL query on the database to check if the results are correct.
+8) If the answer has a nice fit into the chart form or the user prompt asks for drawing chart then use ValidateChartDataAndSendItToUserTool.
 #
 Some tips to always keep in mind:
 tip1) The maximum number of Question/SQL pairs you can request is {max_examples}.
@@ -71,12 +74,15 @@ PLAN_BASE = """1) Use the DbTablesWithRelevanceScores tool to find relevant tabl
 4) [Optional based on the question] Use the SystemTime tool if the question has any mentions of time or dates.
 5) For string columns, always use the DbColumnEntityChecker tool to make sure the entity values are present in the relevant columns.
 6) Write a {dialect} query and always use SqlDbQuery tool the Execute the SQL query on the database to check if the results are correct.
+7) If the answer has a nice fit into the chart form or the user prompt asks for drawing chart then use ValidateChartDataAndSendItToUserTool. Once you have drawn valid and final chart (the last one will be drawn), continue to the next steps or final answer.
 #
 Some tips to always keep in mind:
 tip1) If the SQL query resulted in errors or not correct results, rewrite the SQL query and try again.
 tip2) If SQL results has None or NULL values, handle them by adding a WHERE clause to filter them out.
 tip3) The existance of the string values in the columns should always be checked using the DbColumnEntityChecker tool.
 tip4) You should always execute the SQL query by calling the SqlDbQuery tool to make sure the results are correct.
+tip5) You should always validate the graph data (if you want to draw a graph) by calling ValidateChartDataAndSendItToUserTool to make sure the results are correct. If it is not correct, you should redo it and validate again, only last will be shown.
+tip6) If you have validated a graph, you should continue to the next steps or final answer. 
 """  # noqa: E501
 
 FORMAT_INSTRUCTIONS = """Use the following format:

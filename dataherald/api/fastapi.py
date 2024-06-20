@@ -1080,6 +1080,7 @@ class FastAPI(API):
             yield "data: {}\n\n".format(json.dumps(
                 stream_error_response(e, request.dict(), "nl_generation_not_created")
             ))
+            raise e
         finally:
             if partial_message != '':
                 chat_message_service.create(
