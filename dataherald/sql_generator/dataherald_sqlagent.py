@@ -187,6 +187,46 @@ class QuerySQLDataBaseTool(BaseSQLDatabaseTool, BaseTool):
         raise NotImplementedError("QuerySQLDataBaseTool does not support async")
 
 
+class ValidateChartDataAndSendItToUserTool(BaseSQLDatabaseTool, BaseTool):
+    """Tool for validating chart parameters and sending it to the user."""
+
+    name = "ValidateChartParamsAndSendItToUserTool"
+    description = """
+    Input: Comma-separated list of two arrays: array x and array y. Array x must contain a list of homogeneous values for X Axis, and array y must contain a list of homogeneous values for Y Axis.
+    Output: List of points in the chart.
+    Example input: [1, 2, 3], [4, 5, 6]
+    Example output: [(1, 4), (2, 5), (3, 6)]
+    If an error occurs, rewrite the query and retry.
+    Use this tool to validate and draw charts. Once you have drawn valid and final chart (the last one will be drawn), continue to the next steps or final answer.
+    """
+
+    @catch_exceptions()
+    def _run(
+        self,
+        query: str,
+        top_k: int = TOP_K,
+        run_manager: CallbackManagerForToolRun | None = None,  # noqa: ARG002
+    ) -> str:
+        import ast
+        """Execute the query, return the results or an error message."""
+        query = replace_unprocessable_characters(query)
+        x, y = ast.literal_eval(f"[{query}]")
+        # x = ast.literal_eval(query.split(",")[0].strip())
+        # y = ast.literal_eval(query.split(",")[1].strip())
+        if not all(isinstance(item, (int, float)) for item in y):
+            return "Y must contain a list of homogeneous values"
+        if len(x) != len(y):
+            return "X and Y must have the same length"
+        return str(list(zip(x, y)))
+
+    async def _arun(
+        self,
+        query: str,
+        run_manager: AsyncCallbackManagerForToolRun | None = None,
+    ) -> str:
+        raise NotImplementedError("ValidateChartParamsAndSendItToUserTool does not support async")
+
+
 class GetUserInstructions(BaseSQLDatabaseTool, BaseTool):
     """Tool for retrieving the instructions from the user"""
 
@@ -588,6 +628,7 @@ class SQLDatabaseToolkit(BaseToolkit):
                 few_shot_examples=self.few_shot_examples,
             )
             tools.append(get_fewshot_examples_tool)
+        tools.append(ValidateChartDataAndSendItToUserTool(db=self.db))
         return tools
 
 
