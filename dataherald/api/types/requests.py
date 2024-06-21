@@ -54,6 +54,7 @@ class PromptSQLGenerationNLGenerationInChatRequest(NLGenerationRequest):
 
 class StreamPromptSQLGenerationRequestInChat(StreamSQLGenerationRequest):
     prompt: PromptRequest
+    llm_config: LLMConfig | None
     chat_id: str | None
 
 

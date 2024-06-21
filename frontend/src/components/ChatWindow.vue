@@ -105,7 +105,7 @@ export default {
     },
 
     requestInterceptor(requestDetails) {
-      console.log('NNNN');
+      console.log('ABABBA');
       console.log(requestDetails);
       // Transform the outgoing request to match your backend's expected format
       const promptText = requestDetails.body.messages[0].text; // Extract the text from the message
@@ -138,8 +138,13 @@ export default {
           "prompt": {
             "text": promptText,
             "db_connection_id": this.db_connection_id,
+
             "metadata": {}
           },
+          "llm_config": {
+                "llm_family": "fake",
+                "llm_name": "fake_model"
+            },
 
           chat_id: this.activeChatId
         };
@@ -151,6 +156,10 @@ export default {
             "db_connection_id": this.db_connection_id,
             "metadata": {}
           },
+          "llm_config": {
+                "llm_family": "fake",
+                "llm_name": "fake_model"
+            },
 
         };
       }
@@ -168,7 +177,7 @@ export default {
       // This assumes your backend sends back a JSON object with a "text" property for the response
       if (response && response.chat_id) {
         const transformedResponse = {
-          text: response.text // The message to be displayed by deep-chat
+          text: response.assistant_message_type + ': ' + response.content // The message to be displayed by deep-chat
         };
         // emit change chat:
         if (response.chat_id && response.chat_id !== this.activeChatId) {
