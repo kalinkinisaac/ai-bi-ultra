@@ -1080,6 +1080,14 @@ class FastAPI(API):
                 # yield "data: {}\n\n".format(json.dumps({"text": value + '\n\n', "chat_id": chat.id}))
                 yield "data: {}\n\n".format(json.dumps(value))
 
+                chat_message_service.create(
+                    chat_id=value["chat_id"],
+                    role="assistant",
+                    content=value["content"],
+                    content_type=value["content_type"],
+                    assistant_message_type=value["assistant_message_type"],
+                )
+
                 queue.task_done()
                 await asyncio.sleep(0.001)
         except Exception as e:

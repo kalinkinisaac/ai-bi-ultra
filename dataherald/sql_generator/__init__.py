@@ -210,7 +210,7 @@ class SQLGenerator(Component, ABC):
                                     dict(
                                         assistant_message_type="observation",
                                         content_type="chart",
-                                        content=dict(x=parsed_observation["x"], y=parsed_observation["y"]),
+                                        content=json.dumps(dict(x=parsed_observation["x"], y=parsed_observation["y"])),
                                     )
                                 )
                     elif "output" in chunk:
