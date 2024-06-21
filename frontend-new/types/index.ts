@@ -22,7 +22,7 @@ export interface Message {
   chat_id: string;
   role: keyof typeof EChatRespondent;
   content: string;
-  content_type: "text" | "image" | "video" | "audio" | "file";
+  content_type: "text" | "image" | "video" | "audio" | "file" | "chart";
   assistant_message_type: keyof typeof EChatAssistantMessageType;
   created_at: string;
 }

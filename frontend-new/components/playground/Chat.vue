@@ -10,7 +10,6 @@ import * as z from "zod";
 
 import { type DatabaseConnectionsResponse } from "@/types/db";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
-import { randomUUID } from "crypto";
 
 const route = useRoute();
 
@@ -20,10 +19,41 @@ const chatId = computed(
     "temp",
 );
 
+// x is a date, y is a number
+const prepareArrayData = (rawData: { x: string[]; y: number[] }) => {
+  const parsedData = JSON.parse(rawData);
+
+  const { x, y } = parsedData;
+
+  if (x.length !== y.length) {
+    throw Error("invalid graph data");
+  }
+
+  const res: Array<{ x: string; y: number }> = [];
+
+  for (let i = 0; i < y.length - 1; i++) {
+    res.push({
+      x: new Date(x[i]).getTime(),
+      y: y[i],
+    });
+  }
+
+  console.log(res);
+
+  return res;
+};
+
+const getChartOptions = (): ApexCharts.ApexOptions => {
+  return {
+    chart: "line",
+    xaxis: { type: "datetime" },
+  };
+};
+
 const query = defineModel<string>("query");
 const connection = defineModel<string>("connection");
 
-const { getChatById, addMessageToChat, chats } = useGlobalChats();
+const { getChatById, addMessageToChat } = useGlobalChats();
 
 // Form
 const formSchema = toTypedSchema(
@@ -56,7 +86,7 @@ const sync = () => {
       db_connection_id: connection.value,
     },
   })
-    .then((data) => {
+    .then(() => {
       // Вывести кол-во синканутых таблиц
       // data.length
     })
@@ -77,7 +107,7 @@ const onSubmit = async () => {
   query.value = "";
 
   addMessageToChat(chatId.value, {
-    id: randomUUID(),
+    id: "",
     role: EChatRespondent.user,
     content: userQuery,
     created_at: format(new Date(), "YYYY-MM-DDTHH:mm:ssZ"),
@@ -178,7 +208,15 @@ const onSubmit = async () => {
             <span class="font-bold"
               >{{ message.role === EChatRespondent.user ? "Вы" : "AI" }}:</span
             >
-            {{ message.content }}
+            <span v-if="message.content_type === 'text'">
+              {{ message.content }}
+            </span>
+
+            <apexchart
+              v-if="message.content_type === 'chart'"
+              :series="[{ data: prepareArrayData(message.content) }]"
+              :options="getChartOptions()"
+            />
           </div>
         </template>
       </div>
