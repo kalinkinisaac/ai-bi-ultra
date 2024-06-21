@@ -1,5 +1,6 @@
 import datetime
 import difflib
+import json
 import logging
 import os
 from functools import wraps
@@ -217,7 +218,7 @@ class ValidateChartDataAndSendItToUserTool(BaseSQLDatabaseTool, BaseTool):
             return "Y must contain a list of homogeneous values"
         if len(x) != len(y):
             return "X and Y must have the same length"
-        return str(list(zip(x, y)))
+        return json.dumps(dict(content_type="chart", is_valid=True, x=x, y=y))
 
     async def _arun(
         self,

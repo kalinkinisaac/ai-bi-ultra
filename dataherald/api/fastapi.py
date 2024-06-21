@@ -1069,7 +1069,8 @@ class FastAPI(API):
                     break
                 # print value to console
                 print('value:', value, sep=' ', end='...')
-                value['content'] = value['content'].replace('```sql', '\n```sql') + '\n\n'
+                if isinstance(value['content'], str):
+                    value['content'] = value['content'].replace('```sql', '\n```sql') + '\n\n'
                 # yield value
 
                 #
