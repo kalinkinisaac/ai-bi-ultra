@@ -24,7 +24,7 @@ from dataherald.api.types.responses import (
     PromptResponse,
     SQLGenerationResponse,
     TableDescriptionResponse,
-    ChatResponse, ChatMessageResponse, DatabaseTableResponse,
+    Message, ChatMessageResponse, DatabaseTableResponse,
 )
 from dataherald.config import Component
 from dataherald.db_scanner.models.types import QueryHistory
@@ -312,11 +312,11 @@ class API(Component, ABC):
     #     pass
 
     @abstractmethod
-    def create_chat(self, chat_request: ChatRequest) -> ChatResponse:
+    def create_chat(self, chat_request: ChatRequest) -> Message:
         pass
 
     @abstractmethod
-    def list_chats(self) -> List[ChatResponse]:
+    def list_chats(self) -> List[Message]:
         pass
 
     @abstractmethod

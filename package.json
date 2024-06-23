@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@microsoft/fetch-event-source": "^2.0.1",
+    "apexcharts": "^3.49.1",
+    "vue3-apexcharts": "^1.5.3"
+  }
+}

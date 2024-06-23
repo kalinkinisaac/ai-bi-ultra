@@ -52,6 +52,7 @@ services:
       - ./frontend-new:/app  # Mounts the code into the container
       - /app/node_modules # To avoid replacing node_modules with a host's folder
       - /app/dist # To avoid replacing node_modules with a host's folder
+#    command: ["npx", "nuxi", "prepare", "&&", "npx", "nuxi", "cleanup", "&&", "npx", "nuxi", "dev"]
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080" ]
       interval: 30s
@@ -74,7 +75,6 @@ services:
     volumes:
       - ./dataherald:/app/dataherald
     depends_on:
-      - db
       - mongodb
     networks:
       - backendnetwork

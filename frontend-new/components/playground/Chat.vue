@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ChatResponse } from "@/types";
-import { EChatRespondent } from "@/types";
+import { EChatAssistantMessageType, EChatRespondent } from "@/types";
+import { useGlobalChats } from "~/stores/useGlobalChats";
 
 import { format } from "@formkit/tempo";
 
@@ -9,26 +9,57 @@ import { toTypedSchema } from "@vee-validate/zod";
 import * as z from "zod";
 
 import { type DatabaseConnectionsResponse } from "@/types/db";
+import { fetchEventSource } from "@microsoft/fetch-event-source";
 
-withDefaults(
-  defineProps<{
-    messages: ChatResponse[] | null;
-  }>(),
-  {
-    messages: null,
-  },
+const route = useRoute();
+
+const chatId = computed(
+  () =>
+    (Array.isArray(route.params.id) ? route.params.id[0] : route.params.id) ||
+    "temp",
 );
-const emit = defineEmits<{
-  submit: [];
-}>();
+
+// x is a date, y is a number
+const prepareArrayData = (rawData: { x: string[]; y: number[] }) => {
+  const parsedData = JSON.parse(rawData);
+
+  const { x, y } = parsedData;
+
+  if (x.length !== y.length) {
+    throw Error("invalid graph data");
+  }
+
+  const res: Array<{ x: string; y: number }> = [];
+
+  for (let i = 0; i < y.length - 1; i++) {
+    res.push({
+      x: new Date(x[i]).getTime(),
+      y: y[i],
+    });
+  }
+
+  console.log(res);
+
+  return res;
+};
+
+const getChartOptions = (): ApexCharts.ApexOptions => {
+  return {
+    chart: "line",
+    xaxis: { type: "datetime" },
+  };
+};
+
 const query = defineModel<string>("query");
 const connection = defineModel<string>("connection");
+
+const { getChatById, addMessageToChat } = useGlobalChats();
 
 // Form
 const formSchema = toTypedSchema(
   z.object({
-    query: z.string().min(1),
-    connection: z.string().min(1),
+    query: z.string({ required_error: "Не указан запрос" }).min(1),
+    connection: z.string({ required_error: "Не выбрано соединение" }).min(1),
   }),
 );
 
@@ -37,11 +68,16 @@ const form = useForm({
 });
 
 // Settings
-const { data } = await useFetch<DatabaseConnectionsResponse[]>("/api/v1/database-connections");
+const { data } = await useFetch<DatabaseConnectionsResponse[]>(
+  "/api/v1/database-connections",
+);
+
 if (data.value?.length) {
   connection.value = data.value[0].id;
 }
+const isChatPending = ref(false);
 const isSyncPending = ref(false);
+
 const sync = () => {
   isSyncPending.value = true;
   $fetch("/api/v1/table-descriptions/sync-schemas", {
@@ -50,7 +86,7 @@ const sync = () => {
       db_connection_id: connection.value,
     },
   })
-    .then((data) => {
+    .then(() => {
       // Вывести кол-во синканутых таблиц
       // data.length
     })
@@ -62,53 +98,73 @@ const sync = () => {
     });
 };
 
-// const query = ref('')
 const onSubmit = async () => {
-  const { valid, errors } = await form.validate();
-  console.log("PlaygroundChat: onSubmit hui", valid, errors);
+  console.log("onSubmit");
+  isChatPending.value = true;
 
-  console.log("PlaygroundChat: onSubmit");
-  emit("submit");
+  const userQuery: string = query.value?.trim() || "";
 
-  const subscribeToThoughts = async () => {
+  query.value = "";
 
-    console.log(query.value, connection.value);
-    const eventSource = new EventSource('/api/v2/fake-stream-sql-generation?text=' + query.value + '&connection_id=' + connection.value, {withCredentials: true});
+  addMessageToChat(chatId.value, {
+    id: "",
+    role: EChatRespondent.user,
+    content: userQuery,
+    created_at: format(new Date(), "YYYY-MM-DDTHH:mm:ssZ"),
+    chat_id: chatId.value,
+    content_type: "text",
+    assistant_message_type: EChatAssistantMessageType.user_input,
+  });
 
-    eventSource.onmessage = (event) => {
-      console.log(event.data)
-    }
-  };
-
-  subscribeToThoughts();
+  fetchEventSource("/api/v1/stream-sql-generation_in_chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId.value,
+      prompt: {
+        text: userQuery,
+        db_connection_id: connection.value,
+        metadata: {},
+      },
+      llm_config: {
+        llm_family: "fake",
+        llm_name: "fake_model",
+      },
+    }),
+    onmessage(response) {
+      const data = JSON.parse(response.data);
+    },
+    onerror(error) {
+      console.log(error);
+      isChatPending.value = false;
+    },
+    onclose() {
+      console.log("onclose");
+      isChatPending.value = false;
+    },
+  });
 };
 </script>
 
 <template>
-  <div class="relative flex h-screen min-h-[50vh] flex-col rounded-xl bg-muted/20 p-4 lg:col-span-2">
+  <div
+    class="relative flex h-screen min-h-[50vh] flex-col rounded-xl bg-muted/20 p-4 lg:col-span-2"
+  >
     <div class="absolute flex flex-row gap-2 z-10">
       <Select v-model="connection">
         <SelectTrigger>
-          <SelectValue
-            placeholder="Выберите БД"
-          />
+          <SelectValue placeholder="Выберите БД" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem
-            v-for="(el, idx) in data"
-            :key="idx"
-            :value="el.id"
-          >
-            <!-- {{ el.alias || 'Без имени' }} -->
-            <div class="flex items-center text-left gap-3 text-muted-foreground">
+          <SelectItem v-for="(el, idx) in data" :key="idx" :value="el.id">
+            <div
+              class="flex items-center text-left gap-3 text-muted-foreground"
+            >
               <div class="grid gap-0.5">
                 <span class="font-medium text-foreground">
-                  {{ el.alias || 'Без имени' }}
+                  {{ el.alias || "Без имени" }}
                 </span>
-                <p
-                  class="text-xs"
-                  data-description
-                >
+                <p class="text-xs" data-description>
                   {{ el.id }}
                 </p>
               </div>
@@ -123,64 +179,53 @@ const onSubmit = async () => {
         :disabled="isSyncPending"
         @click="sync"
       >
-        <!-- <LazyIconLoaderCircle
-            v-if="isSyncPending"
-            class="w-4 h-4 animate-spin"
-          /> -->
         <IconRefreshCcw
           class="w-4 h-4"
-          :class="{'animate-spin': isSyncPending }"
+          :class="{ 'animate-spin': isSyncPending }"
         />
-        <div class="hidden md:block">
-          Синх-ция таблиц
-        </div>
+        <div class="hidden md:block">Синх-ция таблиц</div>
       </Button>
     </div>
-    <Badge
-      variant="outline"
-      class="absolute right-4 top-3"
-    >
-      Вывод
-    </Badge>
 
-    <ScrollArea
-      class="flex-1 flex w-full items-end pb-3 pt-14"
-    >
-
-      <!-- <slot /> -->
-
+    <ScrollArea class="flex-1 flex w-full items-end pb-3 pt-14">
       <div class="flex flex-col gap-3 w-full">
         <template
-          v-for="message in messages"
+          v-for="message in getChatById(chatId).messages"
           :key="message.id"
         >
           <div
             class="p-4 text-sm rounded-md"
             :class="{
-              'bg-primary/10 rounded-bl-none self-end': message.role === EChatRespondent.user,
-              'bg-foreground text-primary-foreground rounded-bl-none self-start': message.role === EChatRespondent.assistant
+              'bg-primary/10 rounded-br-none self-end':
+                message.role === EChatRespondent.user,
+              'bg-foreground text-primary-foreground rounded-bl-none self-start':
+                message.role === 'assistant',
             }"
           >
-            <div class="text-xs opacity-50">{{ format(message.created_at, 'HH:mm') }}</div>
-            <span class="font-bold">{{ message.role === EChatRespondent.user ? 'Вы' : 'AI' }}:</span>
-            {{ message.content }}
-            <div v-if="message.sql" class="p-2 border border-opacity-30 rounded-md">
-              <Shiki lang="sql" :code="message.sql" />
-              <pre>message.sql</pre>
-              <pre>{{message.sql}}</pre>
+            <div class="text-xs opacity-50">
+              {{ format(message.created_at, "HH:mm") }}
             </div>
+            <span class="font-bold"
+              >{{ message.role === EChatRespondent.user ? "Вы" : "AI" }}:</span
+            >
+            <span v-if="message.content_type === 'text'">
+              {{ message.content }}
+            </span>
+
+            <apexchart
+              v-if="message.content_type === 'chart'"
+              :series="[{ data: prepareArrayData(message.content) }]"
+              :options="getChartOptions()"
+            />
           </div>
         </template>
       </div>
     </ScrollArea>
 
-    <form class="flex-none relative overflow-hidden rounded-lg border bg-background focus-within:ring-1 focus-within:ring-ring">
-      <Label
-        for="message"
-        class="sr-only"
-      >
-        Запрос
-      </Label>
+    <form
+      class="flex-none relative overflow-hidden rounded-lg border bg-background focus-within:ring-1 focus-within:ring-ring"
+    >
+      <Label for="message" class="sr-only"> Запрос </Label>
       <Textarea
         v-model="query"
         placeholder="Введите ваш запрос..."
@@ -192,7 +237,9 @@ const onSubmit = async () => {
           type="submit"
           size="sm"
           class="ml-auto gap-1.5"
-          :disabled="isSyncPending"
+          :disabled="
+            isChatPending || isSyncPending || !query?.trim() || !connection
+          "
           @click.prevent="onSubmit"
         >
           Отправить

@@ -8,13 +8,16 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "dev-with-cleanup": "nuxi cleanup && nuxi prepare && nuxi dev"
   },
   "dependencies": {
     "@formkit/tempo": "^0.0.19",
+    "@microsoft/fetch-event-source": "^2.0.1",
     "@pinia/nuxt": "^0.5.1",
     "@vee-validate/zod": "^4.12.6",
     "@vueuse/core": "^10.9.0",
+    "apexcharts": "^3.49.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "lucide-vue-next": "^0.357.0",
@@ -25,6 +28,7 @@
     "vee-validate": "^4.12.6",
     "vue": "^3.4.21",
     "vue-router": "^4.3.0",
+    "vue3-apexcharts": "^1.5.3",
     "zod": "^3.22.4"
   },
   "devDependencies": {

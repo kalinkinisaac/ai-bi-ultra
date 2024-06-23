@@ -35,7 +35,7 @@ from dataherald.api.types.responses import (
     PromptResponse,
     SQLGenerationResponse,
     TableDescriptionResponse,
-    ChatResponse, ChatMessageResponse, DatabaseTableResponse,
+    Message, ChatMessageResponse, DatabaseTableResponse,
 )
 from dataherald.config import System
 from dataherald.context_store import ContextStore
@@ -178,7 +178,7 @@ class FastAPI(API):
         return [TableDescriptionResponse(**row.dict()) for row in rows]
 
     @override
-    def create_chat(self, chat_request: ChatRequest) -> ChatResponse:
+    def create_chat(self, chat_request: ChatRequest) -> Message:
         try:
             chat = Chat(
                 title="Random name: {}".format(uuid.uuid4().hex),
@@ -187,7 +187,7 @@ class FastAPI(API):
             chat = chat_repository.insert(chat)
         except Exception as e:
             return error_response(e, chat_request.dict(), "chat_not_created")
-        return ChatResponse(**chat.dict())
+        return Message(**chat.dict())
 
     @override
     def create_database_connection(
@@ -291,11 +291,11 @@ class FastAPI(API):
 
 
     @override
-    def list_chats(self) -> list[ChatResponse]:
+    def list_chats(self) -> list[Message]:
         chat_repository = ChatRepository(self.storage)
         chats = chat_repository.find_all()
         return [
-            ChatResponse(**chat.dict())
+            Message(**chat.dict())
             for chat in chats
         ]
 
@@ -1067,26 +1067,42 @@ class FastAPI(API):
                 value = queue.get()
                 if value is None:
                     break
-
-                value = value.replace('```sql', '\n```sql')
+                # print value to console
+                print('value:', value, sep=' ', end='...')
+                print("VALUE: ", value)
+                value['content'] = value['content'].replace('```sql', '\n```sql') + '\n\n'
                 # yield value
 
-                partial_message += value + '\n\n'
-                yield "data: {}\n\n".format(json.dumps({"text": value + '\n\n', "chat_id": chat.id}))
+                #
+                value.update({"chat_id": chat.id})
+
+                # partial_message += value + '\n\n'
+                # yield "data: {}\n\n".format(json.dumps({"text": value + '\n\n', "chat_id": chat.id}))
+                yield "data: {}\n\n".format(json.dumps(value))
+
+                chat_message_service.create(
+                    chat_id=value["chat_id"],
+                    role="assistant",
+                    content=value["content"],
+                    content_type=value["content_type"],
+                    assistant_message_type=value["assistant_message_type"],
+                )
 
                 queue.task_done()
                 await asyncio.sleep(0.001)
         except Exception as e:
+            print('exception', e)
             yield "data: {}\n\n".format(json.dumps(
                 stream_error_response(e, request.dict(), "nl_generation_not_created")
             ))
-        finally:
-            if partial_message != '':
-                chat_message_service.create(
-                    chat_id=chat.id,
-                    role="assistant",
-                    content=partial_message,
-                )
+            raise e
+        # finally:
+        #     if partial_message != '':
+        #         chat_message_service.create(
+        #             chat_id=chat.id,
+        #             role="assistant",
+        #             content=partial_message,
+        #         )
 
     @override
     async def fake_stream_sql_generation(

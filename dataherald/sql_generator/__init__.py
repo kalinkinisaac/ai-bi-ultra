@@ -1,5 +1,6 @@
 """Base class that all sql generation classes inherit from."""
 import datetime
+import json
 import logging
 import os
 import re
@@ -181,19 +182,45 @@ class SQLGenerator(Component, ABC):
                     if "actions" in chunk:
                         for message in chunk["messages"]:
                             queue.put(
-                                self.format_sql_query_intermediate_steps(
-                                    message.content
-                                )
-                                + "\n"
+                                {"assistant_message_type": "thought", "content_type": "text", "content":
+                                    self.format_sql_query_intermediate_steps(
+                                        message.content
+                                    )
+                                    + "\n"
+                                 }
                             )
                     elif "steps" in chunk:
                         for step in chunk["steps"]:
-                            queue.put(
-                                f"\n**Observation:**\n {self.format_sql_query_intermediate_steps(step.observation)}\n"
-                            )
+                            content_type = "text"
+                            try:
+                                parsed_observation = json.loads(step.observation)
+                                if parsed_observation.get("content_type") == "chart" and parsed_observation.get("is_valid"):
+                                    content_type = "chart"
+                            except ValueError:
+                                pass
+                            if content_type == "text":
+                                queue.put(
+                                    dict(
+                                        assistant_message_type="observation",
+                                        content_type="text",
+                                        content=self.format_sql_query_intermediate_steps(step.observation),
+                                    )
+                                )
+                            elif content_type == "chart":
+                                queue.put(
+                                    dict(
+                                        assistant_message_type="observation",
+                                        content_type="chart",
+                                        content=json.dumps(dict(x=parsed_observation["x"], y=parsed_observation["y"])),
+                                    )
+                                )
                     elif "output" in chunk:
                         queue.put(
-                            f'\n**Final Answer:**\n {self.format_sql_query_intermediate_steps(chunk["output"])}'
+                            dict(
+                                assistant_message_type="final_answer",
+                                content_type="text",
+                                content=self.format_sql_query_intermediate_steps(chunk["output"]),
+                            )
                         )
                         if "```sql" in chunk["output"]:
                             response.sql = replace_unprocessable_characters(

@@ -7,7 +7,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      // apiUrl: 'http://localhost:80',
+      // apiUrl: "http://app:80",
     },
   },
   // routeRules: {

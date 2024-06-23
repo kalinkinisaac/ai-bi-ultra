@@ -60,6 +60,8 @@ class ChatMessageResponse(BaseModel):
     chat_id: str
     role: str
     content: str
+    content_type: str | None
+    assistant_message_type: str | None
     created_at: datetime
 
 # class NLGenerationInChatResponse(NLGenerationResponse):
@@ -105,7 +107,7 @@ class GoldenSQLResponse(BaseResponse, GoldenSQL):
     pass
 
 
-class ChatResponse(BaseResponse):
+class Message(BaseResponse):
     id: str
     title: str
     created_at: datetime
