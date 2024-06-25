@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import HomeView from "../views/HomeView.vue";
+import Account from "../views/Account.vue";
 import Home from "../views/Home.vue"
 import DatabaseConnection from "../views/DatabaseConnection.vue";
 import QueryData from "../views/QueryData.vue";
@@ -66,6 +66,15 @@ const routes = [
       requiresAuth: true,
     },
   },
+
+  {
+    path: "/account",
+    name: "account",
+    component: Account,
+    meta: {
+      requiresAuth: true,
+    },
+  },
   {
     path: "/auth/:pathMatch(.*)*",
     name: "auth",
@@ -80,7 +89,7 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
     if (to.matched.some(record => record.meta.requiresAuth)) {
-        const sessionExists = true //await Session.doesSessionExist();
+        const sessionExists = await Session.doesSessionExist();
         if (!sessionExists) {
             next({ name: 'auth' }); // Redirect to the auth route or login page
         } else {

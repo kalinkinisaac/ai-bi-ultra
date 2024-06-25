@@ -31,13 +31,13 @@ app = server.app()
 # app = FastAPI(title="SuperTokens example")
 # app.add_middleware(get_middleware())
 
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=[config.app_info.website_domain],
-#     allow_credentials=True,
-#     allow_methods=["GET", "PUT", "POST", "DELETE", "OPTIONS", "PATCH"],
-#     allow_headers=["Content-Type"] + get_all_cors_headers(),
-# )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[config.app_info.website_domain],
+    allow_credentials=True,
+    allow_methods=["GET", "PUT", "POST", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["Content-Type"] + get_all_cors_headers(),
+)
 
 @app.get("/sessioninfo")
 async def secure_api(s: SessionContainer = Depends(verify_session())):
@@ -46,7 +46,7 @@ async def secure_api(s: SessionContainer = Depends(verify_session())):
         "userId": s.get_user_id(),
         "accessTokenPayload": s.get_access_token_payload(),
     }
-from fastapi import FastAPI, Request
+from fastapi import Request
 # Using FastAPI instance
 @app.get("/url-list")
 def get_all_urls():
