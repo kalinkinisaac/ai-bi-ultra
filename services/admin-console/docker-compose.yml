@@ -1,0 +1,21 @@
+services:
+  next-app:
+    container_name: console
+    build:
+      context: .
+      dockerfile: dev.Dockerfile
+
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+    ports:
+      - "${NEXT_PORT:-3000}:${NEXT_PORT:-3000}"
+    environment:
+      - NEXT_PORT=${NEXT_PORT:-3000}
+    restart: always
+    networks:
+      - dataherald_network
+    env_file: .env.local
+networks:
+  dataherald_network:
+    external: true

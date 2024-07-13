@@ -1,0 +1,3 @@
+<template>
+  <PlaygroundCode />
+</template>
