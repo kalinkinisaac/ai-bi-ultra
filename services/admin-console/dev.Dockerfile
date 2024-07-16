@@ -17,7 +17,7 @@ ENV NEXT_PORT=3000
 
 # Docker network URL for the API -- used for nextjs server side API calls inside the docker network
 # The browser needs to access the API from the exposed port in the docker host (i.e.: localhost:3001)
-ENV DOCKER_API_URL='http://api:3001' 
+ENV DOCKER_API_URL='http://api:3001'
 
 # Note: Don't expose ports here, Compose will handle that for us
 
