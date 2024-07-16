@@ -668,28 +668,28 @@ class DataheraldSQLAgent(SQLGenerator):
         tools = toolkit.get_tools()
         if max_examples > 0 and number_of_instructions > 0:
             plan = PLAN_WITH_FEWSHOT_EXAMPLES_AND_INSTRUCTIONS
-            suffix = SUFFIX_WITH_FEW_SHOT_SAMPLES
+            suffix = SUFFIX_WITH_FEW_SHOT_SAMPLES.format(language='russian')
         elif max_examples > 0:
             plan = PLAN_WITH_FEWSHOT_EXAMPLES
-            suffix = SUFFIX_WITH_FEW_SHOT_SAMPLES
+            suffix = SUFFIX_WITH_FEW_SHOT_SAMPLES.format(language='russian')
         elif number_of_instructions > 0:
             plan = PLAN_WITH_INSTRUCTIONS
-            suffix = SUFFIX_WITHOUT_FEW_SHOT_SAMPLES
+            suffix = SUFFIX_WITHOUT_FEW_SHOT_SAMPLES.format(language='russian')
         else:
             plan = PLAN_BASE
-            suffix = SUFFIX_WITHOUT_FEW_SHOT_SAMPLES
+            suffix = SUFFIX_WITHOUT_FEW_SHOT_SAMPLES.format(language='russian')
         plan = plan.format(
             dialect=toolkit.dialect,
             max_examples=max_examples,
         )
         prefix = prefix.format(
-            dialect=toolkit.dialect, max_examples=max_examples, agent_plan=plan
+            dialect=toolkit.dialect, max_examples=max_examples, agent_plan=plan, language='russian',
         )
         prompt = ZeroShotAgent.create_prompt(
             tools,
             prefix=prefix,
             suffix=suffix,
-            format_instructions=format_instructions,
+            format_instructions=format_instructions.format(language='russian'),
             input_variables=input_variables,
         )
         llm_chain = LLMChain(

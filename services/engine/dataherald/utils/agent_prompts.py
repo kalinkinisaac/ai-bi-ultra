@@ -1,7 +1,8 @@
 AGENT_PREFIX = """You are an agent designed to interact with a SQL database to find a correct SQL query for the given question.
 Given an input question, generate a syntactically correct {dialect} query, execute the query to make sure it is correct, and return the SQL query between ```sql and ``` tags.
 You have access to tools for interacting with the database. You can use tools using Action: <tool_name> and Action Input: <tool_input> format.
-Only use the below tools. Only use the information returned by the below tools to construct your final answer.
+Only use the below tools. Only use the information returned by the below tools to construct your final answer. Also, give you answers in the {language} language. 
+Of course, use english when using keywords like 'Action:', 'Thought:' and similar, and in SQL code. But the content of observation, thought should be in {language} language
 #
 Here is the plan you have to follow:
 {agent_plan}
@@ -81,25 +82,25 @@ tip4) You should always execute the SQL query by calling the SqlDbQuery tool to 
 FORMAT_INSTRUCTIONS = """Use the following format:
 
 Question: the input question you must answer
-Thought: you should always think about what to do
-Action: the action to take, should be one of [{tool_names}]
+Thought: you should always think about what to do. Use {language} language
+Action: the action to take, should be one of [{{tool_names}}]
 Action Input: the input to the action
-Observation: the result of the action
+Observation: the result of the action. Use {language} language
 ... (this Thought/Action/Action Input/Observation can repeat N times)
-Thought: I now know the final answer
-Final Answer: the final answer to the original input question"""
+Thought: I now know the final answer (Translate it to {language} language if needed)
+Final Answer: the final answer to the original input question. Use {language} language"""
 
 SUFFIX_WITH_FEW_SHOT_SAMPLES = """Begin!
 
-Question: {input}
-Thought: I should Collect examples of Question/SQL pairs to check if there is a similar question among the examples.
-{agent_scratchpad}"""  # noqa: E501
+Question: {{input}}
+Thought: I should Collect examples of Question/SQL pairs to check if there is a similar question among the examples. Use {language} language
+{{agent_scratchpad}}"""  # noqa: E501
 
 SUFFIX_WITHOUT_FEW_SHOT_SAMPLES = """Begin!
 
-Question: {input}
-Thought: I should find the relevant tables.
-{agent_scratchpad}"""
+Question: {{input}}
+Thought: I should find the relevant tables. (Translate it to {language} language if needed)
+{{agent_scratchpad}}"""
 
 FINETUNING_SYSTEM_INFORMATION = """
 You are an assistant that is an expert in generating SQL queries.
