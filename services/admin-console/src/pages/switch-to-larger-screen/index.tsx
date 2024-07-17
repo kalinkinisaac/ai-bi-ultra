@@ -19,13 +19,13 @@ const SwitchLargerDevicePage: FC = () => {
     isMobile && (
       <BackgroundPageLayout>
         <Head>
-          <title>Switch to larger screen - Dataherald API</title>
+          <title>Switch to larger screen - AIBI API</title>
         </Head>
         <div className="bg-white flex flex-col items-center sm:gap-5 shadow-lg w-full max-w-none h-screen rounded-none sm:rounded-2xl sm:h-fit p-8 sm:max-w-lg">
           <Image
             priority
             className="my-2"
-            src="/images/dh-logo-color.svg"
+            src="/images/text_logo.svg"
             alt="Background"
             width={250}
             height={50}

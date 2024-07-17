@@ -119,12 +119,14 @@ const SidebarNav = ({
       href: 'https://discord.gg/tmTpvw9U',
       icon: MessagesSquare,
       external: true,
+      hidden: true,
     },
     {
       text: 'Documentation',
       href: 'https://docs.dataherald.com/',
       icon: BookOpenText,
       external: true,
+      hidden: true,
     },
   ]
 
@@ -219,8 +221,8 @@ const SidebarNav = ({
           <div className={cn('h-12', isSidebarOpen ? 'w-[150px]' : 'w-6')}>
             <Image
               priority
-              src="/images/dh-logo-color.svg"
-              alt="Dataherald Logo"
+              src="/images/text_logo.svg"
+              alt="AIBI Logo"
               width={150}
               height={50}
               className={cn(
@@ -230,10 +232,10 @@ const SidebarNav = ({
             ></Image>
             <Image
               priority
-              src="/images/dh-logo-symbol-color.svg"
-              alt="Dataherald Symbol Logo"
-              width={22}
-              height={22}
+              src="/images/logo_75.svg"
+              alt="AIBI Symbol Logo"
+              width={48}
+              height={48}
               className={cn('mx-1 my-3', isSidebarOpen ? 'hidden' : 'd-block')}
             ></Image>
           </div>

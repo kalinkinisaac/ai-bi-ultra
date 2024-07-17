@@ -129,7 +129,7 @@ const GenerateApiKeyDialog: FC<AddApiKeyDialogProps> = ({ onGeneratedKey }) => {
                 security reasons,{' '}
                 <strong>{`you won't be able to view it again`}</strong>{' '}
                 {`through your
-            Dataherald account. If you lose this secret key, you'll need to
+            AIBI account. If you lose this secret key, you'll need to
             generate a new one.`}
               </p>
               <div className="py-4 flex gap-2">

@@ -114,7 +114,7 @@ const DownloadCsvPage: FC = () => {
   return (
     <div className="flex items-center justify-center min-h-screen relative">
       <Head>
-        <title>Download CSV - Dataherald API</title>
+        <title>Download CSV - AIBI API</title>
       </Head>
       <Image
         src="/images/dh_background.png"
