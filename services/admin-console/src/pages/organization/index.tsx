@@ -82,7 +82,7 @@ const OrganizationSettingsPage: FC = () => {
   return (
     <PageLayout>
       <Head>
-        <title>Organization - Dataherald API</title>
+        <title>Organization - AIBI API</title>
       </Head>
       <div className="grow flex flex-col gap-5 m-6">
         {isAdmin && (

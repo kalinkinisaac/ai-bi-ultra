@@ -106,7 +106,7 @@ const QueriesPage: FC = () => {
   return (
     <PageLayout>
       <Head>
-        <title>Queries - Dataherald API</title>
+        <title>Queries - AIBI API</title>
       </Head>
       <ContentBox className="m-6">{pageContent}</ContentBox>
     </PageLayout>

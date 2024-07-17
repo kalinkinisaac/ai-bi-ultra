@@ -405,7 +405,7 @@ const PlaygroundPage: FC = () => {
   return (
     <>
       <Head>
-        <title>Playground - Dataherald API</title>
+        <title>Playground - AIBI API</title>
       </Head>
       <PageLayout>
         {loadingDatabases ? (

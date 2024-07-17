@@ -43,7 +43,7 @@ const BillingPage: FC = () => {
   return (
     <PageLayout>
       <Head>
-        <title>Billing - Dataherald API</title>
+        <title>Billing - AIBI API</title>
       </Head>
       <div className="flex flex-col gap-10 p-6">
         <div className="flex flex-col gap-5 max-w-2xl">

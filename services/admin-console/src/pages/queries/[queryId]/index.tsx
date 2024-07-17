@@ -97,7 +97,7 @@ const QueryPage: FC = () => {
     <PageLayout disableBreadcrumb>
       <>
         <Head>
-          <title>Query editor - Dataherald API</title>
+          <title>Query editor - AIBI API</title>
         </Head>
         {pageContent}
       </>

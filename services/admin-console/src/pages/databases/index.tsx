@@ -92,7 +92,7 @@ const DatabasesPage: FC = () => {
     <PageLayout>
       <>
         <Head>
-          <title>Databases - Dataherald API</title>
+          <title>Databases - AIBI API</title>
         </Head>
         {pageContent}
       </>

@@ -179,20 +179,15 @@ const DatabaseConnectionFormDialog: FC<DatabaseConnectionFormDialogProps> = ({
                   {isFirstConnection
                     ? 'Connect your database to start using the platform. '
                     : 'Connect another database to the platform. '}
-                  <Link
-                    href="https://docs.dataherald.com/database-connection/add-database-connection"
-                    target="_blank"
-                    rel="noreferrer noopener"
+                  <Button
+                    variant="external-link"
+                    size="sm"
+                    className="p-0 h-fit"
+                    disabled
                   >
-                    <Button
-                      variant="external-link"
-                      size="sm"
-                      className="p-0 h-fit"
-                    >
-                      Learn more about adding a database
-                      <ArrowUpRight size={14} className="mr-2" />
-                    </Button>
-                  </Link>
+                    Learn more about adding a database (soon)
+                    <ArrowUpRight size={14} className="mr-2" />
+                  </Button>
                 </DialogDescription>
               </DialogHeader>
               <div className="grow flex flex-col overflow-auto p-1">
